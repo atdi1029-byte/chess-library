@@ -3,8 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport"
-  content="width=device-width, initial-scale=1.0">
+  content="width=device-width, initial-scale=1.0,
+  maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable"
+  content="yes">
+<meta name="theme-color" content="#1a1612">
 <title>Bobby Fischer Teaches Chess</title>
+<link rel="icon" href="../logo.png">
+<link rel="apple-touch-icon" href="../logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600&display=swap"
   rel="stylesheet">
 <style>
@@ -215,19 +221,34 @@ body{
   color:var(--bright)}
 
 /* MOBILE */
+.bout svg{max-width:100%;height:auto}
 @media(max-width:600px){
   .wrap{padding:12px 8px 80px}
   .duo{grid-template-columns:1fr}
+  .hdr h1{font-size:16px}
+  .tabs{gap:0}
+  .tab{padding:8px 10px;font-size:11px}
+  .sec h2{font-size:20px}
+  .sec h3{font-size:14px}
+  .puz-text,.sec p{font-size:13px}
+  .free-bar{gap:6px}
+  .fbtn{font-size:11px;padding:6px 10px}
 }
 </style>
 </head>
 <body>
 
 <div class="hdr">
-  <div>
-    <h1><span>&#9816;</span>
-      Bobby Fischer Teaches Chess</h1>
-  </div>
+  <a href="../index.html" style="text-decoration:
+    none;display:flex;align-items:center;gap:10px">
+    <img src="../logo.png" alt=""
+      style="width:32px;height:32px;
+      border-radius:50%;border:1px solid var(--gold)">
+    <div>
+      <h1><span>&#9816;</span>
+        Bobby Fischer Teaches Chess</h1>
+    </div>
+  </a>
   <div class="hdr-r" id="prog">Chapter 1</div>
 </div>
 
@@ -910,6 +931,60 @@ function build(){
     expl:'<strong>Yes — checkmate!</strong> "You have to watch those Knights!" The Knight on f6 and the Queen on g6 work together to cover every escape. The Knight\'s tricky L-shape makes it lethal in close quarters.',
   });
 
+  addPuzzle(w,{
+    id:'f43',num:43,
+    text:'"You will now see more complex positions that require careful consideration of <strong>every</strong> piece on the board." Which Black piece can defend against mate, and how?',
+    fen:'2Q1b1k1/1p1nQpp1/P2n2r1/N1pp4/2PP4/Pp2PP2/KBP5/3R4',
+    type:'choice',
+    q:'How does the defending piece save Black?',
+    opts:['By capturing the attacker',
+      'By interposing'],
+    ans:1,
+    expl:'<strong>The Rook interposes!</strong> "You have to watch all the pieces on the board and observe how they affect the position." In complex positions, the defense is often hiding in plain sight.',
+  });
+
+  addPuzzle(w,{
+    id:'f46',num:46,
+    text:'Can White\'s Rook mate by capturing the Pawn? Look at which pieces protect the Rook.',
+    fen:'kbr5/pp6/Pp6/8/8/5n2/5PBb/R6K',
+    type:'choice',
+    q:'Can White\'s Rook mate by capturing the Pawn?',
+    opts:['Yes','No'],
+    ans:0,
+    expl:'<strong>Yes!</strong> White\'s Rook captures the Pawn on a7, delivering check. The Rook is protected by the Bishop on g2. The King has no escape — mate!',
+  });
+
+  addPuzzle(w,{
+    id:'f47',num:47,
+    text:'A spectacular position where White sacrificed his Queen earlier. "Note Black\'s Bishop next to White\'s King."',
+    fen:'r2Rk2r/ppn1bppp/8/1N6/1b6/8/PPP2PPP/R1B1K2R',
+    type:'choice',
+    q:'Is Black mated?',
+    opts:['Yes — checkmate',
+      'No — Black has a defense'],
+    ans:0,
+    expl:'<strong>Yes — checkmate!</strong> Black is mated. White sacrificed his Queen to achieve this position. Even though Black\'s Bishop sits right next to White\'s King, it doesn\'t matter — Black\'s King is the one in trouble.',
+  });
+
+  // === REAL GAME: FISCHER VS LETELIER ===
+  addHTML(w,`
+<div class="sec">
+  <h3>Fischer vs. Letelier, Leipzig 1960</h3>
+  <p>One of Fischer's most famous games. Playing
+  Black, Fischer unleashed a devastating Bishop
+  sacrifice. Letelier <strong>resigned rather than
+  permit the Bishop to mate</strong>. The position
+  below shows the final position — find how
+  Black's Bishop delivers the killing blow.</p>
+</div>`);
+
+  addMovePuzzle(w,{
+    id:'f48',num:48,
+    text:'<strong>Fischer vs. Letelier, Leipzig 1960.</strong> Fischer (Black) can deliver checkmate with his Bishop. Find the mating move!',
+    fen:'5k2/1pp2rpp/p1n5/3P4/2P2p2/1Pn2BK1/P2R4/RQ6',
+    toMove:'b',
+  });
+
   // === PINS ===
   addHTML(w,`
 <div class="sec">
@@ -1050,6 +1125,42 @@ function build(){
 </div>`);
 
   addPuzzle(w,{
+    id:'f66',num:66,
+    text:'White has several possible checks. Can any of them deliver mate? "I\'ve made the positions a little tricky, so be careful!"',
+    fen:'kbQ5/pp6/Np6/P7/8/8/1PP5/1K6',
+    type:'choice',
+    q:'In this position:',
+    opts:['White can mate in one move',
+      'White cannot mate'],
+    ans:0,
+    expl:'<strong>White can mate in one move.</strong> The Knight and Queen work together — the Queen delivers check while the Knight and Pawn control the escape squares.',
+  });
+
+  addPuzzle(w,{
+    id:'f70',num:70,
+    text:'White has two possible mating squares for the Queen. But only one of them works — the other is defended.',
+    fen:'5kQ1/5p1p/5Bpp/3Q1n2/8/8/6PP/6K1',
+    type:'choice',
+    q:'In this position:',
+    opts:['White can mate in one move',
+      'White cannot mate'],
+    ans:0,
+    expl:'<strong>White can mate!</strong> "White mates on square B. He cannot mate on square A because the Black Queen defends that square." Always check what the opponent\'s pieces control.',
+  });
+
+  addPuzzle(w,{
+    id:'f71',num:71,
+    text:'A heavily defended Black position. Can White break through?',
+    fen:'7r/5nk1/p4np1/Qb2Qn2/1p6/1P6/KPB1P3/3R4',
+    type:'choice',
+    q:'In this position:',
+    opts:['White can mate in one move',
+      'White cannot mate'],
+    ans:1,
+    expl:'<strong>White cannot mate.</strong> "In fact, any White piece that dares to check will be promptly captured." Sometimes the defense is simply too strong — recognizing this is just as important as finding checkmates.',
+  });
+
+  addPuzzle(w,{
     id:'f68',num:68,
     text:'A crowded position with many pieces. Look carefully at every piece\'s defensive capabilities.',
     fen:'kbn5/pp6/Pp6/1NQ5/P1P5/8/K7/8',
@@ -1071,6 +1182,67 @@ function build(){
     ans:0,
     expl:'<strong>Yes!</strong> Queen to h5 (Qh5#) is checkmate. "Black foolishly weakened his King\'s defenses. This game took three moves!!" This is the famous Fool\'s Mate pattern.',
   });
+
+  addPuzzle(w,{
+    id:'f77',num:77,
+    text:'The Black Queen appears to defend, but appearances can be deceiving when pins are involved.',
+    fen:'1R2q3/1pp1bp2/p1np4/8/4B3/PPP5/2K5/8',
+    type:'choice',
+    q:'Can White mate in one move?',
+    opts:['Yes','No'],
+    ans:0,
+    expl:'<strong>Yes — White can mate!</strong> "The Black Queen is pinned." The Bishop pins the Queen to the King along the diagonal, so she can\'t defend. The Rook delivers mate on the back rank.',
+  });
+
+  addPuzzle(w,{
+    id:'f78',num:78,
+    text:'A position featuring a remarkable double pin. "The White Bishop, which is itself pinned, pins one of the Black Rooks."',
+    fen:'6k1/3RPp1p/pnr3r1/Pp6/1Pb5/2K1N3/P7/7R',
+    type:'choice',
+    q:'Can White mate in one move?',
+    opts:['Yes','No'],
+    ans:0,
+    expl:'<strong>Yes!</strong> "Pawn mates by becoming a Queen or a Rook. Note that the White Bishop, which is itself pinned, pins one of the Black Rooks." A pinned piece can still pin another piece — a beautiful tactical idea.',
+  });
+
+  // === CHAPTER SUMMARY ===
+  addHTML(w,`
+<div class="sec">
+  <h2>Chapter 1 Summary</h2>
+  <p>You've now learned the <strong>elements
+  of checkmate</strong> — the foundation of
+  everything in chess. Here's what you know:</p>
+  <p><strong>Three escapes from check:</strong>
+  Capture the attacker, flee to a safe square,
+  or interpose a piece to block.</p>
+  <p><strong>Protection:</strong> A checking
+  piece that's protected can't be captured.
+  This is the difference between check and
+  checkmate.</p>
+  <p><strong>Pins:</strong> A pinned piece
+  can't move without exposing its King.
+  Pins paralyze defenders and create
+  mating opportunities.</p>
+  <p><strong>Pawn promotion:</strong> A Pawn
+  reaching the far rank becomes any piece.
+  Sometimes a Knight (underpromotion) is
+  better than a Queen.</p>
+  <p><strong>Discovered check:</strong> Moving
+  one piece reveals a check from another.
+  The moving piece is free to land anywhere,
+  making these attacks devastatingly
+  powerful.</p>
+  <p>Fischer showed you positions from his
+  real tournament games — against Keres,
+  Larsen, Gligorich, Letelier, and others.
+  These patterns aren't abstract exercises.
+  They happen at the highest levels of
+  chess.</p>
+  <p>Next up: <strong>Chapter 2 — The
+  Back-Rank Mates</strong>, where you'll
+  learn the most common mating pattern in
+  all of chess.</p>
+</div>`);
 
   // === FREE PLAY ===
   addHTML(w,`
