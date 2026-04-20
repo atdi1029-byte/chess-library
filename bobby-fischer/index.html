@@ -15,18 +15,18 @@
   rel="stylesheet">
 <style>
 :root {
-  --bg: #1a1612;
-  --raised: #231f1a;
-  --card: #2a2520;
-  --border: #3a3228;
+  --bg: #141820;
+  --raised: #1a2030;
+  --card: #1e2638;
+  --border: #2a3550;
   --gold: #c5a55a;
-  --text: #d4c8a8;
-  --dim: #8a7e68;
-  --bright: #f0e8d0;
+  --text: #c8cad0;
+  --dim: #6a7088;
+  --bright: #e8eaf0;
   --ok: #5a8a5a;
   --err: #c45050;
-  --lsq: #f0d9b5;
-  --dsq: #b58863;
+  --lsq: #d4b896;
+  --dsq: #8a6e4a;
   --r: 8px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -377,7 +377,7 @@ function mkBoard(container,fen,sz){
       rect.setAttribute('width',sz);
       rect.setAttribute('height',sz);
       rect.setAttribute('fill',
-        (r+c)%2===0?'#f0d9b5':'#b58863');
+        (r+c)%2===0?'#d4b896':'#8a6e4a');
       svg.appendChild(rect);
     }
   const hlG=document.createElementNS(ns,'g');
@@ -631,6 +631,18 @@ function build(){
     expl:'<strong>Cannot capture.</strong> The Knight on e7 protects g8 via its L-shaped move. The King is trapped by its own pawn on h7. <strong>Checkmate.</strong>',
   });
 
+  addPuzzle(w,{
+    id:'f10',num:10,
+    text:'The White Rook checks from the corner. It\'s right next to the Black King.',
+    fen:'R7/k1p5/1p6/8/8/8/1K6/8',
+    type:'choice',
+    q:'Black King:',
+    opts:['can capture the checking Rook',
+      'cannot capture — checkmate'],
+    ans:0,
+    expl:'<strong>Can capture.</strong> The Rook on a8 is unprotected and adjacent to the King on a7. King simply takes it.',
+  });
+
   // === FLIGHT SQUARES ===
   addHTML(w,`
 <div class="sec">
@@ -679,6 +691,69 @@ function build(){
       'can do neither — checkmate'],
     ans:2,
     expl:'<strong>Checkmate.</strong> The Rook on c8 is beyond the King\'s reach (2 squares away). The King\'s own Bishop on a7 and Pawn on b7 block every escape.',
+  });
+
+  addHTML(w,`
+<div class="sec">
+  <h3>Three Ways Out — Your Turn</h3>
+  <p>Now Fischer asks you to consider
+  <strong>all three escape methods</strong>
+  at once. For each position, decide: can the
+  King capture the attacker? Can it flee? Or
+  is there no escape — checkmate?</p>
+  <p>This is the critical skill: scanning
+  the board systematically. Check capture first,
+  then flight squares, then whether it's mate.
+  Train yourself to go through this checklist
+  every time you see a check.</p>
+</div>`);
+
+  addPuzzle(w,{
+    id:'f14',num:14,
+    text:'A complex position with many pieces. The Black King is under attack. Look carefully at every square around the King.',
+    fen:'4k2q/3pp1Q1/8/1b6/8/8/1PP1PP2/2KR4',
+    type:'choice',
+    q:'Black King:',
+    opts:['can capture its attacker',
+      'can flee','can do neither — checkmate'],
+    ans:1,
+    expl:'<strong>Can flee!</strong> "One square to your left. Work it out." Always check every adjacent square — even ones that look blocked might be available.',
+  });
+
+  addPuzzle(w,{
+    id:'f15',num:15,
+    text:'White Rook checks along the back rank. A White Pawn blocks one escape route.',
+    fen:'2R3k1/5pPp/8/8/8/8/6PP/6K1',
+    type:'choice',
+    q:'Black King:',
+    opts:['can capture attacker','can flee',
+      'can do neither — checkmate'],
+    ans:2,
+    expl:'<strong>Checkmate.</strong> "White\'s Pawn stops Black\'s King from fleeing." The Pawn on g7 blocks f8 and h8, while the Rook covers the entire 8th rank.',
+  });
+
+  addPuzzle(w,{
+    id:'f17',num:17,
+    text:'Here the lowly <strong>Pawn</strong> is giving check. Even the smallest piece can deliver checkmate with the right support.',
+    fen:'rk6/1P6/1KP5/4Q3/8/8/8/8',
+    type:'choice',
+    q:'Black King:',
+    opts:['can capture attacker','can flee',
+      'can do neither — checkmate'],
+    ans:2,
+    expl:'<strong>Checkmate!</strong> A humble Pawn delivers the final blow. The Queen covers the flight squares, and the Rook is blocked. Never underestimate Pawns.',
+  });
+
+  addPuzzle(w,{
+    id:'f18',num:18,
+    text:'A Rook and Queen work together. The Rook gives check — is the Queen protecting it?',
+    fen:'5Rk1/5Qpp/8/8/8/8/6PP/6K1',
+    type:'choice',
+    q:'Black King:',
+    opts:['can capture attacker','can flee',
+      'can do neither — checkmate'],
+    ans:2,
+    expl:'<strong>Checkmate.</strong> "Checking Rook is protected by Queen. Black is mated." The Queen on f7 guards the Rook on f8 and also covers g6.',
   });
 
   addPuzzle(w,{
@@ -757,6 +832,15 @@ function build(){
   Pawn. Fischer shows pairs of positions: one
   where it's mate, and one where a single
   extra defender changes everything.</p>
+  <p>This is a crucial lesson for beginners:
+  when you see your King in check, don't
+  panic and immediately look for King moves.
+  <strong>Scan ALL your pieces first.</strong>
+  Can your Bishop take the attacker? Can your
+  Knight jump in? Can even a humble Pawn
+  capture the checking piece? Often the best
+  defense uses a piece you weren't thinking
+  about.</p>
 </div>`);
 
   const duo4=document.createElement('div');
@@ -851,6 +935,45 @@ function build(){
   const b5b=mkBoard(document.getElementById('d5b'),
     'r7/bp5r/1p6/8/1PK5/1P6/R7/8',36);
   setupExploreBoard(b5b);
+
+  addPuzzle(w,{
+    id:'f32',num:32,
+    text:'The White Rook is checking. Consider all four defensive options carefully.',
+    fen:'8/2n1p3/1k6/8/R7/1PB5/1K6/8',
+    type:'choice',
+    q:'What does Black play?',
+    opts:['King takes Rook','King flees',
+      'Other piece takes Rook',
+      'No defense — checkmate'],
+    ans:0,
+    expl:'<strong>King takes Rook!</strong> The Rook on a4 is unprotected and the King on b6 can reach it. Always check if you can simply capture the attacker.',
+  });
+
+  addPuzzle(w,{
+    id:'f34',num:34,
+    text:'A White Bishop is giving check. The Black King is cornered but has friends nearby.',
+    fen:'5nk1/5Pp1/6Bp/8/8/6P1/5PK1/8',
+    type:'choice',
+    q:'What is Black\'s saving move?',
+    opts:['King takes Bishop','King flees',
+      'Other piece takes Bishop',
+      'No defense — checkmate'],
+    ans:1,
+    expl:'<strong>King flees!</strong> Even though the position looks cramped, the King has an escape square. Always look for flight squares before giving up.',
+  });
+
+  addPuzzle(w,{
+    id:'f35',num:35,
+    text:'A White Knight checks from a tricky angle. But Black has a hidden defender.',
+    fen:'7k/6hp/5N2/4P1P1/3B4/8/6K1/8',
+    type:'choice',
+    q:'What can Black do to escape check?',
+    opts:['King takes Knight','King flees',
+      'Other piece takes Knight',
+      'No defense — checkmate'],
+    ans:2,
+    expl:'<strong>Other piece takes Knight!</strong> "The Pawn saves Black by capturing the checking White Knight." Even a Pawn can be a hero.',
+  });
 
   addPuzzle(w,{
     id:'f37',num:37,
@@ -998,6 +1121,28 @@ function build(){
   combinations." They're one of the most
   important tactical ideas in chess because
   they can paralyze an opponent's defenses.</p>
+  <p>There are three types of pins:</p>
+  <p><strong>Absolute pin:</strong> The pinned
+  piece shields the King. It literally
+  <strong>cannot</strong> move — it's illegal.
+  This is the most powerful type.</p>
+  <p><strong>Relative pin:</strong> The pinned
+  piece shields a valuable piece (like the
+  Queen). It <strong>can</strong> move, but
+  doing so would lose material.</p>
+  <p>In Fischer's examples, you'll see
+  positions where the defense LOOKS available
+  — a Queen appears to guard a square, a
+  Knight seems ready to interpose — but the
+  piece is <strong>pinned</strong> and
+  powerless. Learning to spot pins is one of
+  the fastest ways to improve.</p>
+  <p>A remarkable fact: <strong>a pinned piece
+  can still pin another piece!</strong>
+  Fischer shows a position where White's
+  Bishop is itself pinned, yet it pins one
+  of Black's Rooks. Pins within pins — the
+  complexity builds fast.</p>
 </div>`);
 
   const duo6=document.createElement('div');
@@ -1038,6 +1183,30 @@ function build(){
       'Knight checks'],
     ans:3,
     expl:'<strong>Knight checks!</strong> The Knight delivers checkmate because Black\'s Queen is pinned by the Bishop and Black\'s Pawn is pinned by the Queen. Neither defender can respond.',
+  });
+
+  addPuzzle(w,{
+    id:'f50',num:50,
+    text:'"A fantastic position! Black\'s Queen, Bishop and Knight are ALL pinned and thus unable to come to the defense of the Black King." Three pins at once — total paralysis.',
+    fen:'1k1R4/1qb5/B3N3/1p2P1p1/1P6/3P1QQ1/1KB5/8',
+    type:'choice',
+    q:'Is Black mated?',
+    opts:['Yes — checkmate',
+      'No — Black has a defense'],
+    ans:0,
+    expl:'<strong>Checkmate!</strong> The Rook checks on d8. Black\'s Queen is pinned by White\'s Queen. Black\'s Bishop is pinned by the Rook (next to White King). Black\'s Knight can\'t interpose because it\'s pinned by White\'s Bishop. Three pins = total paralysis.',
+  });
+
+  addPuzzle(w,{
+    id:'f52a',num:52,
+    text:'Two possible checks: Queen-check or Rook-check. One is mate, one isn\'t. The difference? A pin.',
+    fen:'r1bqk2r/pppp1Qpp/2n2n2/2b1p3/2B1P3/8/PPPP1PPP/RNB1K1NR',
+    type:'choice',
+    q:'Which check is mate?',
+    opts:['Queen check is mate, Rook check is not',
+      'Rook check is mate, Queen check is not'],
+    ans:0,
+    expl:'<strong>Queen check is mate!</strong> Black\'s Queen is pinned and cannot interpose. The Rook check is NOT mate because Black\'s Bishop can capture. Always check if defenders are pinned before declaring mate.',
   });
 
   // === PAWN PROMOTION ===
@@ -1098,6 +1267,19 @@ function build(){
   <strong>anywhere</strong> — including squares
   that cut off the King's escape routes.
   It's like getting two moves in one.</p>
+  <p>Fischer shows a beautiful example: a Rook
+  moves aside, revealing a Bishop check behind
+  it. But the Rook doesn't just move
+  randomly — it slides to a square that
+  <strong>blocks the King's only escape</strong>.
+  The Bishop checks, the Rook traps.
+  Devastating teamwork.</p>
+  <p>The most extreme version is a
+  <strong>double check</strong> — where BOTH
+  the moving piece and the revealed piece give
+  check simultaneously. Against a double check,
+  the King <strong>must</strong> move — you can't
+  capture or block two attackers at once.</p>
 </div>`);
 
   addPuzzle(w,{
@@ -1110,6 +1292,18 @@ function build(){
       'Move by White Rook'],
     ans:1,
     expl:'<strong>Move by White Rook!</strong> The Queen check would allow Black two fleeing squares. The Rook move delivers mate by cutting off all escape routes.',
+  });
+
+  addPuzzle(w,{
+    id:'f63',num:63,
+    text:'"Here\'s a fancy one." When the White Rook moves, the White Bishop will be checking. The Rook must land on a square that cuts off all flight squares. This is a discovered check — find where the Rook goes.',
+    fen:'r7/6bk/8/6P1/4R3/8/3B4/p6K',
+    type:'choice',
+    q:'Where should the Rook move to deliver discovered checkmate?',
+    opts:['Rook to h4','Rook to e7',
+      'Rook to e8','Rook to h4 (checking)'],
+    ans:0,
+    expl:'<strong>Rook to h4!</strong> The Rook slides to h4, and the Bishop on d2 is revealed checking the King on h7 through the diagonal. The Rook on h4 covers h-file escape squares. Beautiful discovered checkmate.',
   });
 
   // === FINAL CHALLENGE PUZZLES ===
@@ -1662,7 +1856,7 @@ function fpLoad(fen){
       rect.setAttribute('width',FP.sz);
       rect.setAttribute('height',FP.sz);
       rect.setAttribute('fill',
-        (r+c)%2===0?'#f0d9b5':'#b58863');
+        (r+c)%2===0?'#d4b896':'#8a6e4a');
       svg.appendChild(rect);
     }
   const hl=document.createElementNS(ns,'g');
@@ -1703,10 +1897,29 @@ function updateProg(){
 }
 
 // ==========================================
+// SCROLL BOOKMARK
+// ==========================================
+const SCROLL_KEY='fischer-scroll';
+function saveScroll(){
+  localStorage.setItem(SCROLL_KEY,
+    window.scrollY.toString());
+}
+function restoreScroll(){
+  const y=localStorage.getItem(SCROLL_KEY);
+  if(y)setTimeout(()=>window.scrollTo(0,+y),100);
+}
+let scrollTimer=null;
+window.addEventListener('scroll',()=>{
+  clearTimeout(scrollTimer);
+  scrollTimer=setTimeout(saveScroll,300);
+});
+
+// ==========================================
 // INIT
 // ==========================================
 build();
 updateProg();
+restoreScroll();
 </script>
 </body>
 </html>
