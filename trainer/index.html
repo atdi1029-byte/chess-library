@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+  content="width=device-width, initial-scale=1.0">
+<title>Chess Trainer — Learn the Pieces</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1a1612;
+  --bg-raised: #231f1a;
+  --bg-card: #2a2520;
+  --border: #3a3228;
+  --border-gold: #c5a55a;
+  --text: #d4c8a8;
+  --text-dim: #8a7e68;
+  --text-bright: #f0e8d0;
+  --accent: #c5a55a;
+  --success: #5a8a5a;
+  --error: #c45050;
+  --light-sq: #f0d9b5;
+  --dark-sq: #b58863;
+  --highlight: rgba(255,255,100,0.4);
+  --move-dot: rgba(90,138,90,0.6);
+  --capture-ring: rgba(196,80,80,0.7);
+  --radius: 8px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+}
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+.app-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+.app-header h1 span { color: var(--accent); }
+.header-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+.layout {
+  display: flex;
+  min-height: calc(100vh - 60px);
+}
+
+/* === SIDEBAR === */
+.sidebar {
+  width: 220px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-raised);
+  padding: 16px 0;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+.sidebar h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  padding: 0 16px 8px;
+}
+.lesson-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.lesson-btn:hover { background: var(--bg-card); }
+.lesson-btn.active {
+  background: var(--bg-card);
+  color: var(--text-bright);
+  border-left: 3px solid var(--accent);
+}
+.lesson-btn .icon { font-size: 18px; width: 24px;
+  text-align: center; }
+.lesson-btn .check {
+  margin-left: auto;
+  color: var(--success);
+  font-size: 14px;
+  display: none;
+}
+.lesson-btn.completed .check { display: inline; }
+
+/* === MAIN AREA === */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+.lesson-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  color: var(--text-bright);
+  margin-bottom: 8px;
+}
+.lesson-subtitle {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+}
+
+/* === CHESS BOARD === */
+.board-wrap {
+  position: relative;
+  margin-bottom: 20px;
+}
+.board-container {
+  display: inline-block;
+  border: 3px solid var(--border-gold);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.board-container svg { display: block; }
+.file-labels, .rank-labels {
+  display: flex;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.file-labels {
+  justify-content: space-around;
+  padding: 4px 0;
+  width: 400px;
+}
+.rank-labels {
+  position: absolute;
+  left: -18px;
+  top: 0;
+  height: 400px;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+}
+
+/* === INSTRUCTION PANEL === */
+.instruction-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  max-width: 500px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+.instruction-panel p {
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+.instruction-panel p:last-child { margin-bottom: 0; }
+.instruction-panel strong { color: var(--text-bright); }
+.instruction-panel .piece-symbol {
+  font-size: 22px;
+  vertical-align: middle;
+}
+
+/* === CHALLENGE BOX === */
+.challenge-box {
+  background: rgba(197,165,90,0.1);
+  border: 1px solid rgba(197,165,90,0.3);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  max-width: 500px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+.challenge-box h4 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.challenge-box p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* === FEEDBACK === */
+.feedback {
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  max-width: 500px;
+  width: 100%;
+  margin-bottom: 16px;
+  font-size: 14px;
+  display: none;
+}
+.feedback.success {
+  display: block;
+  background: rgba(90,138,90,0.15);
+  border: 1px solid rgba(90,138,90,0.4);
+  color: #8fc88f;
+}
+.feedback.error {
+  display: block;
+  background: rgba(196,80,80,0.15);
+  border: 1px solid rgba(196,80,80,0.4);
+  color: #e88;
+}
+
+/* === BUTTONS === */
+.btn-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.btn {
+  padding: 10px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover {
+  background: var(--bg-raised);
+  border-color: var(--accent);
+  color: var(--text-bright);
+}
+.btn-primary {
+  background: var(--accent);
+  color: #1a1612;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.btn-primary:hover {
+  background: #d4b46a;
+  border-color: #d4b46a;
+  color: #1a1612;
+}
+
+/* === PIECE SELECTOR === */
+.piece-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.piece-option {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.piece-option:hover {
+  border-color: var(--accent);
+  background: var(--bg-raised);
+}
+.piece-option.active {
+  border-color: var(--accent);
+  background: rgba(197,165,90,0.15);
+  box-shadow: 0 0 12px rgba(197,165,90,0.2);
+}
+
+/* === PROGRESS BAR === */
+.progress-wrap {
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 20px;
+}
+.progress-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.progress-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* === MOBILE === */
+@media (max-width: 700px) {
+  .layout { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 8px 0;
+    display: flex;
+    overflow-x: auto;
+    gap: 0;
+  }
+  .sidebar h3 { display: none; }
+  .lesson-btn {
+    flex-direction: column;
+    padding: 6px 12px;
+    font-size: 11px;
+    white-space: nowrap;
+    min-width: auto;
+  }
+  .lesson-btn .icon { font-size: 16px; }
+  .lesson-btn.active { border-left: none;
+    border-bottom: 2px solid var(--accent); }
+  .board-container svg {
+    width: 320px; height: 320px;
+  }
+  .file-labels { width: 320px; }
+  .rank-labels { height: 320px; }
+  .main { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <h1><span>&#9816;</span> Chess Trainer</h1>
+    <div class="header-sub">
+      Learn how the pieces move
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar">
+    <h3>Lessons</h3>
+  </nav>
+
+  <main class="main" id="main">
+    <!-- content injected by JS -->
+  </main>
+</div>
+
+<script>
+// ================================================
+// CHESS ENGINE
+// ================================================
+const EMPTY = null;
+const WHITE = 'w';
+const BLACK = 'b';
+
+const PIECES = {
+  K: { color: WHITE, type: 'king',   symbol: '\u2654' },
+  Q: { color: WHITE, type: 'queen',  symbol: '\u2655' },
+  R: { color: WHITE, type: 'rook',   symbol: '\u2656' },
+  B: { color: WHITE, type: 'bishop', symbol: '\u2657' },
+  N: { color: WHITE, type: 'knight', symbol: '\u2658' },
+  P: { color: WHITE, type: 'pawn',   symbol: '\u2659' },
+  k: { color: BLACK, type: 'king',   symbol: '\u265A' },
+  q: { color: BLACK, type: 'queen',  symbol: '\u265B' },
+  r: { color: BLACK, type: 'rook',   symbol: '\u265C' },
+  b: { color: BLACK, type: 'bishop', symbol: '\u265D' },
+  n: { color: BLACK, type: 'knight', symbol: '\u265E' },
+  p: { color: BLACK, type: 'pawn',   symbol: '\u265F' },
+};
+
+function newBoard() {
+  const b = [];
+  for (let i = 0; i < 64; i++) b.push(EMPTY);
+  return b;
+}
+
+function idx(r, c) { return r * 8 + c; }
+function row(i) { return Math.floor(i / 8); }
+function col(i) { return i % 8; }
+function inBounds(r, c) {
+  return r >= 0 && r < 8 && c >= 0 && c < 8;
+}
+
+function boardFromFEN(fen) {
+  const board = newBoard();
+  const parts = fen.split(' ');
+  const rows = parts[0].split('/');
+  for (let r = 0; r < 8; r++) {
+    let c = 0;
+    for (const ch of rows[r]) {
+      if (ch >= '1' && ch <= '8') {
+        c += parseInt(ch);
+      } else {
+        board[idx(r, c)] = ch;
+        c++;
+      }
+    }
+  }
+  return board;
+}
+
+function startingPosition() {
+  return boardFromFEN(
+    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
+  );
+}
+
+function pieceColor(p) {
+  if (!p) return null;
+  return p === p.toUpperCase() ? WHITE : BLACK;
+}
+
+function getLegalMoves(board, index, opts) {
+  opts = opts || {};
+  const piece = board[index];
+  if (!piece) return [];
+  const info = PIECES[piece];
+  const r = row(index), c = col(index);
+  const color = info.color;
+  const moves = [];
+
+  function addIfValid(tr, tc) {
+    if (!inBounds(tr, tc)) return false;
+    const target = board[idx(tr, tc)];
+    if (target && pieceColor(target) === color)
+      return false;
+    moves.push(idx(tr, tc));
+    return !target; // continue sliding if empty
+  }
+
+  function slide(dr, dc) {
+    let tr = r + dr, tc = c + dc;
+    while (inBounds(tr, tc)) {
+      if (!addIfValid(tr, tc)) break;
+      tr += dr; tc += dc;
+    }
+  }
+
+  switch (info.type) {
+    case 'king':
+      for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++)
+          if (dr || dc) addIfValid(r + dr, c + dc);
+      break;
+
+    case 'queen':
+      for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++)
+          if (dr || dc) slide(dr, dc);
+      break;
+
+    case 'rook':
+      slide(0, 1); slide(0, -1);
+      slide(1, 0); slide(-1, 0);
+      break;
+
+    case 'bishop':
+      slide(1, 1); slide(1, -1);
+      slide(-1, 1); slide(-1, -1);
+      break;
+
+    case 'knight':
+      const kMoves = [
+        [-2,-1],[-2,1],[-1,-2],[-1,2],
+        [1,-2],[1,2],[2,-1],[2,1]
+      ];
+      for (const [dr,dc] of kMoves)
+        addIfValid(r + dr, c + dc);
+      break;
+
+    case 'pawn':
+      const dir = color === WHITE ? -1 : 1;
+      const startRow = color === WHITE ? 6 : 1;
+      // forward 1
+      const f1 = r + dir;
+      if (inBounds(f1, c) && !board[idx(f1, c)]) {
+        moves.push(idx(f1, c));
+        // forward 2 from start
+        const f2 = r + dir * 2;
+        if (r === startRow && !board[idx(f2, c)])
+          moves.push(idx(f2, c));
+      }
+      // captures
+      for (const dc of [-1, 1]) {
+        const tc = c + dc;
+        if (inBounds(f1, tc)) {
+          const target = board[idx(f1, tc)];
+          if (target && pieceColor(target) !== color)
+            moves.push(idx(f1, tc));
+        }
+      }
+      break;
+  }
+
+  return moves;
+}
+
+// ================================================
+// BOARD RENDERER (SVG)
+// ================================================
+const SQ = 50; // square size
+const BOARD_SIZE = SQ * 8;
+
+function createBoardSVG(container) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('width', BOARD_SIZE);
+  svg.setAttribute('height', BOARD_SIZE);
+  svg.setAttribute('viewBox', `0 0 ${BOARD_SIZE} ${BOARD_SIZE}`);
+
+  // draw squares
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const rect = document.createElementNS(ns, 'rect');
+      rect.setAttribute('x', c * SQ);
+      rect.setAttribute('y', r * SQ);
+      rect.setAttribute('width', SQ);
+      rect.setAttribute('height', SQ);
+      rect.setAttribute('fill',
+        (r + c) % 2 === 0
+        ? 'var(--light-sq)' : 'var(--dark-sq)');
+      rect.setAttribute('data-sq', idx(r, c));
+      rect.classList.add('sq');
+      svg.appendChild(rect);
+    }
+  }
+
+  // highlight layer
+  const hlGroup = document.createElementNS(ns, 'g');
+  hlGroup.id = 'highlights';
+  svg.appendChild(hlGroup);
+
+  // piece layer
+  const pieceGroup = document.createElementNS(ns, 'g');
+  pieceGroup.id = 'pieces';
+  svg.appendChild(pieceGroup);
+
+  // move indicator layer
+  const moveGroup = document.createElementNS(ns, 'g');
+  moveGroup.id = 'move-indicators';
+  svg.appendChild(moveGroup);
+
+  container.appendChild(svg);
+  return svg;
+}
+
+function renderPieces(svg, board) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const g = svg.querySelector('#pieces');
+  g.innerHTML = '';
+  for (let i = 0; i < 64; i++) {
+    if (!board[i]) continue;
+    const info = PIECES[board[i]];
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', col(i) * SQ + SQ / 2);
+    t.setAttribute('y', row(i) * SQ + SQ / 2 + 2);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('font-size', '38');
+    t.setAttribute('data-sq', i);
+    t.classList.add('piece');
+    t.style.cursor = 'pointer';
+    t.style.userSelect = 'none';
+    // add stroke for contrast
+    if (info.color === WHITE) {
+      t.setAttribute('fill', '#fff');
+      t.setAttribute('stroke', '#333');
+      t.setAttribute('stroke-width', '0.5');
+    } else {
+      t.setAttribute('fill', '#222');
+      t.setAttribute('stroke', '#000');
+      t.setAttribute('stroke-width', '0.3');
+    }
+    t.textContent = info.symbol;
+    g.appendChild(t);
+  }
+}
+
+function clearHighlights(svg) {
+  svg.querySelector('#highlights').innerHTML = '';
+  svg.querySelector('#move-indicators').innerHTML = '';
+}
+
+function highlightSquare(svg, index, color) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const g = svg.querySelector('#highlights');
+  const rect = document.createElementNS(ns, 'rect');
+  rect.setAttribute('x', col(index) * SQ);
+  rect.setAttribute('y', row(index) * SQ);
+  rect.setAttribute('width', SQ);
+  rect.setAttribute('height', SQ);
+  rect.setAttribute('fill', color || 'var(--highlight)');
+  rect.style.pointerEvents = 'none';
+  g.appendChild(rect);
+}
+
+function showMoveIndicators(svg, board, moves) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const g = svg.querySelector('#move-indicators');
+  g.innerHTML = '';
+  for (const m of moves) {
+    const cx = col(m) * SQ + SQ / 2;
+    const cy = row(m) * SQ + SQ / 2;
+    if (board[m]) {
+      // capture: ring around square
+      const ring = document.createElementNS(ns, 'circle');
+      ring.setAttribute('cx', cx);
+      ring.setAttribute('cy', cy);
+      ring.setAttribute('r', SQ / 2 - 3);
+      ring.setAttribute('fill', 'none');
+      ring.setAttribute('stroke', 'var(--capture-ring)');
+      ring.setAttribute('stroke-width', '4');
+      ring.style.pointerEvents = 'none';
+      g.appendChild(ring);
+    } else {
+      // empty: small dot
+      const dot = document.createElementNS(ns, 'circle');
+      dot.setAttribute('cx', cx);
+      dot.setAttribute('cy', cy);
+      dot.setAttribute('r', 8);
+      dot.setAttribute('fill', 'var(--move-dot)');
+      dot.style.pointerEvents = 'none';
+      g.appendChild(dot);
+    }
+  }
+}
+
+// ================================================
+// LESSON DEFINITIONS
+// ================================================
+const lessons = [
+  {
+    id: 'board',
+    title: 'The Chessboard',
+    icon: '&#9638;',
+    subtitle: 'Understanding the battlefield',
+    setup: () => newBoard(),
+    content: `
+      <p>Chess is played on a board of <strong>64 squares</strong>
+      — 8 rows and 8 columns, with alternating light and
+      dark squares.</p>
+      <p>Columns are called <strong>files</strong> (labeled
+      a through h, left to right). Rows are called
+      <strong>ranks</strong> (labeled 1 through 8,
+      bottom to top).</p>
+      <p>Every square has a name: the file letter + the
+      rank number. For example, the bottom-left corner
+      is <strong>a1</strong> and the top-right is
+      <strong>h8</strong>.</p>
+      <p>Hover over any square to see its name.</p>
+    `,
+    challenge: null,
+    interact: 'hover',
+  },
+  {
+    id: 'starting',
+    title: 'The Starting Position',
+    icon: '&#9812;',
+    subtitle: '16 pieces per side, ready for battle',
+    setup: startingPosition,
+    content: `
+      <p>Each side starts with <strong>16 pieces</strong>:
+      1 King, 1 Queen, 2 Rooks, 2 Bishops, 2 Knights,
+      and 8 Pawns.</p>
+      <p>White's pieces start on ranks 1 and 2.
+      Black's pieces start on ranks 7 and 8.
+      <strong>White always moves first.</strong></p>
+      <p>The Queen starts on her own color — the White
+      Queen on a light square (d1), the Black Queen on
+      a dark square (d8).</p>
+      <p>Click any piece to see its name and how it
+      moves.</p>
+    `,
+    challenge: null,
+    interact: 'identify',
+  },
+  {
+    id: 'king',
+    title: 'The King',
+    icon: '&#9812;',
+    subtitle: 'One square in any direction',
+    setup: () => {
+      const b = newBoard();
+      b[idx(4, 4)] = 'K'; // e4
+      return b;
+    },
+    content: `
+      <p>The <strong>King</strong>
+      <span class="piece-symbol">&#9812;</span>
+      is the most important piece. If your King is
+      captured, you lose the game.</p>
+      <p>The King can move <strong>one square</strong>
+      in any direction — horizontally, vertically, or
+      diagonally. That's 8 possible squares from the
+      center, fewer near the edges.</p>
+      <p>The King cannot move to a square that is
+      attacked by an enemy piece.</p>
+    `,
+    challenge: {
+      text: 'Click the King to see where it can move. Then click a highlighted square to move it there.',
+    },
+    interact: 'move',
+    moveColor: WHITE,
+  },
+  {
+    id: 'rook',
+    title: 'The Rook',
+    icon: '&#9814;',
+    subtitle: 'Horizontal and vertical power',
+    setup: () => {
+      const b = newBoard();
+      b[idx(4, 3)] = 'R'; // d4
+      return b;
+    },
+    content: `
+      <p>The <strong>Rook</strong>
+      <span class="piece-symbol">&#9814;</span>
+      moves any number of squares along a
+      <strong>rank or file</strong> (horizontally or
+      vertically). It cannot jump over other pieces.</p>
+      <p>The Rook is one of the most powerful pieces,
+      worth about <strong>5 points</strong>. It's
+      especially strong in open positions with few
+      pieces blocking its path.</p>
+    `,
+    challenge: {
+      text: 'Click the Rook to see its range. Try moving it around the board.',
+    },
+    interact: 'move',
+    moveColor: WHITE,
+  },
+  {
+    id: 'bishop',
+    title: 'The Bishop',
+    icon: '&#9815;',
+    subtitle: 'Master of the diagonals',
+    setup: () => {
+      const b = newBoard();
+      b[idx(4, 2)] = 'B'; // c4
+      return b;
+    },
+    content: `
+      <p>The <strong>Bishop</strong>
+      <span class="piece-symbol">&#9815;</span>
+      moves any number of squares
+      <strong>diagonally</strong>. Like the Rook, it
+      cannot jump over other pieces.</p>
+      <p>Because it only moves diagonally, a Bishop is
+      forever trapped on squares of one color. Your
+      light-squared Bishop will never touch a dark
+      square, and vice versa. That's why the two
+      Bishops together are called a
+      <strong>"Bishop pair"</strong> — they complement
+      each other.</p>
+    `,
+    challenge: {
+      text: 'Click the Bishop to see its diagonals. Notice it can only reach squares of one color.',
+    },
+    interact: 'move',
+    moveColor: WHITE,
+  },
+  {
+    id: 'queen',
+    title: 'The Queen',
+    icon: '&#9813;',
+    subtitle: 'The most powerful piece',
+    setup: () => {
+      const b = newBoard();
+      b[idx(4, 3)] = 'Q'; // d4
+      return b;
+    },
+    content: `
+      <p>The <strong>Queen</strong>
+      <span class="piece-symbol">&#9813;</span>
+      combines the power of the Rook and Bishop. She
+      can move any number of squares in
+      <strong>any direction</strong> — horizontally,
+      vertically, or diagonally.</p>
+      <p>The Queen is the most powerful piece on the
+      board, worth about <strong>9 points</strong>.
+      But don't bring her out too early — she can be
+      chased around by lesser pieces.</p>
+    `,
+    challenge: {
+      text: 'Click the Queen to see her enormous range. She can reach 27 squares from the center!',
+    },
+    interact: 'move',
+    moveColor: WHITE,
+  },
+  {
+    id: 'knight',
+    title: 'The Knight',
+    icon: '&#9816;',
+    subtitle: 'The tricky L-shape jumper',
+    setup: () => {
+      const b = newBoard();
+      b[idx(4, 4)] = 'N'; // e4
+      return b;
+    },
+    content: `
+      <p>The <strong>Knight</strong>
+      <span class="piece-symbol">&#9816;</span>
+      moves in an <strong>L-shape</strong>: two squares
+      in one direction and one square perpendicular, or
+      vice versa.</p>
+      <p>The Knight is the only piece that can
+      <strong>jump over</strong> other pieces. It always
+      lands on a square of the opposite color from
+      where it started.</p>
+      <p>From the center, a Knight can reach 8 squares.
+      From a corner, only 2. This is why Knights love
+      the center and hate the edges — "a Knight on
+      the rim is dim."</p>
+    `,
+    challenge: {
+      text: 'Click the Knight to see its L-shaped moves. Try moving it to different spots and notice how its reach changes.',
+    },
+    interact: 'move',
+    moveColor: WHITE,
+  },
+  {
+    id: 'pawn',
+    title: 'The Pawn',
+    icon: '&#9817;',
+    subtitle: 'Small but full of potential',
+    setup: () => {
+      const b = newBoard();
+      b[idx(6, 4)] = 'P'; // e2
+      b[idx(3, 3)] = 'p'; // d5 (enemy to capture)
+      b[idx(3, 5)] = 'p'; // f5 (enemy to capture)
+      return b;
+    },
+    content: `
+      <p>The <strong>Pawn</strong>
+      <span class="piece-symbol">&#9817;</span>
+      moves <strong>forward one square</strong> at a
+      time. On its very first move, it has the option
+      to advance <strong>two squares</strong>.</p>
+      <p>Pawns capture differently from how they move —
+      they capture <strong>one square diagonally
+      forward</strong>. A Pawn cannot capture the piece
+      directly in front of it.</p>
+      <p>If a Pawn reaches the far side of the board
+      (rank 8 for White, rank 1 for Black), it
+      <strong>promotes</strong> — it transforms into a
+      Queen, Rook, Bishop, or Knight of your choice.
+      Usually you pick a Queen.</p>
+    `,
+    challenge: {
+      text: 'Click the Pawn on e2. It can advance 1 or 2 squares. Move it forward, then see how it can capture the Black Pawns diagonally.',
+    },
+    interact: 'move',
+    moveColor: WHITE,
+  },
+  {
+    id: 'capture',
+    title: 'Capturing Pieces',
+    icon: '&#9876;',
+    subtitle: 'Remove your opponent\'s army',
+    setup: () => {
+      const b = newBoard();
+      b[idx(4, 3)] = 'R'; // white rook d4
+      b[idx(4, 7)] = 'r'; // black rook h4
+      b[idx(1, 3)] = 'n'; // black knight d7
+      b[idx(7, 3)] = 'p'; // black pawn d1
+      return b;
+    },
+    content: `
+      <p>To <strong>capture</strong> an enemy piece,
+      move your piece to the square the enemy occupies.
+      The enemy piece is removed from the board and
+      your piece takes its place.</p>
+      <p>You <strong>cannot capture your own
+      pieces</strong>. If your own piece is in the way,
+      you're blocked (except for the Knight, which
+      jumps).</p>
+      <p>In the position shown, the White Rook on d4
+      can capture any of the three Black pieces. Try
+      it!</p>
+    `,
+    challenge: {
+      text: 'Click the White Rook, then click one of the Black pieces to capture it. Captures are shown with a red ring.',
+    },
+    interact: 'move',
+    moveColor: WHITE,
+  },
+  {
+    id: 'check',
+    title: 'Check',
+    icon: '&#9888;',
+    subtitle: 'Your King is under attack!',
+    setup: () => {
+      const b = newBoard();
+      b[idx(0, 7)] = 'k'; // black king h8
+      b[idx(7, 0)] = 'R'; // white rook a1
+      b[idx(7, 7)] = 'K'; // white king h1
+      b[idx(0, 0)] = 'r'; // black rook a8
+      return b;
+    },
+    content: `
+      <p>When a piece attacks the enemy King, the King
+      is in <strong>check</strong>. The player whose
+      King is in check <strong>must</strong> get out
+      of check immediately. You cannot make any other
+      move.</p>
+      <p>There are three ways to escape check:</p>
+      <p><strong>1. Capture</strong> the attacking
+      piece.<br>
+      <strong>2. Block</strong> — place a piece between
+      the attacker and your King.<br>
+      <strong>3. Flee</strong> — move your King to a
+      safe square.</p>
+    `,
+    challenge: {
+      text: 'In this position, both Rooks face each other along rank 1 and file a. Click pieces to explore the tension.',
+    },
+    interact: 'move',
+    moveColor: WHITE,
+  },
+  {
+    id: 'checkmate',
+    title: 'Checkmate!',
+    icon: '&#9813;',
+    subtitle: 'The ultimate goal',
+    setup: () => {
+      // Classic back-rank mate setup
+      const b = newBoard();
+      b[idx(0, 6)] = 'k'; // black king g8
+      b[idx(1, 5)] = 'p'; // black pawn f7
+      b[idx(1, 6)] = 'p'; // black pawn g7
+      b[idx(1, 7)] = 'p'; // black pawn h7
+      b[idx(7, 3)] = 'R'; // white rook d1
+      b[idx(7, 6)] = 'K'; // white king g1
+      b[idx(6, 5)] = 'P'; // white pawn f2
+      b[idx(6, 6)] = 'P'; // white pawn g2
+      b[idx(6, 7)] = 'P'; // white pawn h2
+      return b;
+    },
+    content: `
+      <p><strong>Checkmate</strong> is when a King is
+      in check and has <strong>no way to
+      escape</strong>. The game is over — the side
+      that delivers checkmate wins.</p>
+      <p>This is the entire goal of chess. Everything
+      else — capturing pieces, controlling the center,
+      developing your army — serves this one
+      purpose.</p>
+      <p>In this position, if White moves the Rook to
+      d8, it's <strong>checkmate</strong>. The Black
+      King is in check from the Rook, and can't
+      capture it (too far), can't block it (no pieces
+      available), and can't flee (f8, g8, h8 are
+      all covered by the Rook, and f7, g7, h7 are
+      blocked by Black's own Pawns).</p>
+      <p>This is called a <strong>back-rank
+      mate</strong> — one of the most common patterns
+      you'll learn in Fischer's book.</p>
+    `,
+    challenge: {
+      text: 'Click the White Rook on d1 and deliver checkmate by moving it to d8!',
+      targetMove: { from: idx(7, 3), to: idx(0, 3) },
+    },
+    interact: 'puzzle',
+    moveColor: WHITE,
+  },
+  {
+    id: 'castling',
+    title: 'Castling',
+    icon: '&#9814;',
+    subtitle: 'The King\'s special escape',
+    setup: () => {
+      const b = newBoard();
+      b[idx(7, 4)] = 'K'; // white king e1
+      b[idx(7, 7)] = 'R'; // white rook h1
+      b[idx(7, 0)] = 'R'; // white rook a1
+      b[idx(6, 0)] = 'P';
+      b[idx(6, 1)] = 'P';
+      b[idx(6, 2)] = 'P';
+      b[idx(6, 5)] = 'P';
+      b[idx(6, 6)] = 'P';
+      b[idx(6, 7)] = 'P';
+      return b;
+    },
+    content: `
+      <p><strong>Castling</strong> is a special move
+      where the King and a Rook move simultaneously.
+      It's the only time two pieces move in one
+      turn.</p>
+      <p><strong>Kingside castling</strong> (short):
+      the King moves two squares toward h1, and the
+      Rook jumps to the other side of the King
+      (f1).</p>
+      <p><strong>Queenside castling</strong> (long):
+      the King moves two squares toward a1, and the
+      Rook jumps to d1.</p>
+      <p><strong>Rules:</strong> You can only castle
+      if: (1) neither the King nor the Rook has moved
+      yet, (2) no pieces are between them, (3) the
+      King is not in check, and (4) the King doesn't
+      pass through or land on an attacked square.</p>
+      <p>Castling is vital — it gets your King to
+      safety and activates your Rook in one move.</p>
+    `,
+    challenge: {
+      text: 'This position shows White ready to castle either side. In a real game, you\'d want to castle early for King safety.',
+    },
+    interact: 'move',
+    moveColor: WHITE,
+  },
+  {
+    id: 'practice',
+    title: 'Free Play',
+    icon: '&#9823;',
+    subtitle: 'Explore the full starting position',
+    setup: startingPosition,
+    content: `
+      <p>Now you know how all the pieces move!
+      Here's the full starting position. Click any
+      White piece to see where it can go, then make
+      moves.</p>
+      <p>Notice that at the start, only the
+      <strong>Knights</strong> and <strong>Pawns</strong>
+      can move — everything else is blocked. This is
+      why openings usually begin with Pawn moves to
+      clear paths for the Bishops and Queen.</p>
+      <p>When you're comfortable with the piece
+      movements, you'll be ready for Chapter 1 of
+      Fischer's book: <strong>Elements of
+      Checkmate</strong>.</p>
+    `,
+    challenge: {
+      text: 'Explore freely! Click any piece to see its moves. Try developing your pieces — move Pawns to open lines, bring out Knights and Bishops.',
+    },
+    interact: 'free',
+  },
+];
+
+// ================================================
+// APP STATE
+// ================================================
+let currentLesson = 0;
+let board = newBoard();
+let selectedSq = -1;
+let legalMoves = [];
+let svg = null;
+let completedLessons = new Set();
+let moveCount = 0;
+
+// Load progress from localStorage
+const STORAGE_KEY = 'chess-trainer-progress';
+function loadProgress() {
+  try {
+    const d = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) || '[]'
+    );
+    completedLessons = new Set(d);
+  } catch(e) {}
+}
+function saveProgress() {
+  localStorage.setItem(STORAGE_KEY,
+    JSON.stringify([...completedLessons])
+  );
+}
+
+// ================================================
+// RENDER SIDEBAR
+// ================================================
+function renderSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = '<h3>Lessons</h3>';
+  lessons.forEach((l, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'lesson-btn';
+    if (i === currentLesson) btn.classList.add('active');
+    if (completedLessons.has(l.id))
+      btn.classList.add('completed');
+    btn.innerHTML = `
+      <span class="icon">${l.icon}</span>
+      <span>${l.title}</span>
+      <span class="check">&#10003;</span>
+    `;
+    btn.onclick = () => loadLesson(i);
+    sb.appendChild(btn);
+  });
+}
+
+// ================================================
+// RENDER LESSON
+// ================================================
+function loadLesson(index) {
+  currentLesson = index;
+  const lesson = lessons[index];
+  board = lesson.setup();
+  selectedSq = -1;
+  legalMoves = [];
+  moveCount = 0;
+
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+
+  // progress bar
+  const pw = document.createElement('div');
+  pw.className = 'progress-wrap';
+  const pct = Math.round(
+    (completedLessons.size / lessons.length) * 100
+  );
+  pw.innerHTML = `
+    <div class="progress-bar">
+      <div class="progress-fill"
+        style="width:${pct}%"></div>
+    </div>
+    <div class="progress-label">
+      ${completedLessons.size}/${lessons.length}
+      lessons completed
+    </div>
+  `;
+  main.appendChild(pw);
+
+  // title
+  const h = document.createElement('h2');
+  h.className = 'lesson-title';
+  h.textContent = lesson.title;
+  main.appendChild(h);
+
+  const sub = document.createElement('div');
+  sub.className = 'lesson-subtitle';
+  sub.textContent = lesson.subtitle;
+  main.appendChild(sub);
+
+  // board
+  const bwrap = document.createElement('div');
+  bwrap.className = 'board-wrap';
+
+  const rl = document.createElement('div');
+  rl.className = 'rank-labels';
+  for (let r = 8; r >= 1; r--) {
+    const s = document.createElement('span');
+    s.textContent = r;
+    rl.appendChild(s);
+  }
+  bwrap.appendChild(rl);
+
+  const bc = document.createElement('div');
+  bc.className = 'board-container';
+  svg = createBoardSVG(bc);
+  bwrap.appendChild(bc);
+
+  const fl = document.createElement('div');
+  fl.className = 'file-labels';
+  for (const f of 'abcdefgh') {
+    const s = document.createElement('span');
+    s.textContent = f;
+    fl.appendChild(s);
+  }
+  bwrap.appendChild(fl);
+
+  main.appendChild(bwrap);
+
+  renderPieces(svg, board);
+
+  // square name tooltip for board lesson
+  if (lesson.interact === 'hover') {
+    const tip = document.createElement('div');
+    tip.id = 'sq-tooltip';
+    tip.style.cssText = `
+      text-align:center; font-size:18px;
+      color:var(--text-bright); font-weight:600;
+      height:28px; margin-top:-4px; margin-bottom:8px;
+    `;
+    tip.textContent = '\u00A0';
+    // insert after board
+    main.insertBefore(tip,
+      bwrap.nextSibling);
+  }
+
+  // instruction panel
+  const ip = document.createElement('div');
+  ip.className = 'instruction-panel';
+  ip.innerHTML = lesson.content;
+  main.appendChild(ip);
+
+  // challenge box
+  if (lesson.challenge) {
+    const cb = document.createElement('div');
+    cb.className = 'challenge-box';
+    cb.innerHTML = `
+      <h4>Try It</h4>
+      <p>${lesson.challenge.text}</p>
+    `;
+    main.appendChild(cb);
+  }
+
+  // feedback area
+  const fb = document.createElement('div');
+  fb.className = 'feedback';
+  fb.id = 'feedback';
+  main.appendChild(fb);
+
+  // navigation buttons
+  const btnRow = document.createElement('div');
+  btnRow.className = 'btn-row';
+  if (index > 0) {
+    const prev = document.createElement('button');
+    prev.className = 'btn';
+    prev.textContent = 'Previous';
+    prev.onclick = () => loadLesson(index - 1);
+    btnRow.appendChild(prev);
+  }
+
+  const reset = document.createElement('button');
+  reset.className = 'btn';
+  reset.textContent = 'Reset Board';
+  reset.onclick = () => {
+    board = lesson.setup();
+    selectedSq = -1;
+    legalMoves = [];
+    moveCount = 0;
+    clearHighlights(svg);
+    renderPieces(svg, board);
+    hideFeedback();
+  };
+  btnRow.appendChild(reset);
+
+  if (index < lessons.length - 1) {
+    const next = document.createElement('button');
+    next.className = 'btn btn-primary';
+    next.textContent = 'Next Lesson \u2192';
+    next.onclick = () => {
+      completedLessons.add(lesson.id);
+      saveProgress();
+      loadLesson(index + 1);
+    };
+    btnRow.appendChild(next);
+  } else {
+    const done = document.createElement('button');
+    done.className = 'btn btn-primary';
+    done.textContent = 'Complete! \u2713';
+    done.onclick = () => {
+      completedLessons.add(lesson.id);
+      saveProgress();
+      renderSidebar();
+      showFeedback(
+        'Congratulations! You\'ve completed all the '
+        + 'lessons. You\'re ready for Chapter 1 of '
+        + 'Bobby Fischer Teaches Chess!',
+        'success'
+      );
+    };
+    btnRow.appendChild(done);
+  }
+  main.appendChild(btnRow);
+
+  // set up click handler
+  svg.onclick = handleBoardClick;
+  if (lesson.interact === 'hover') {
+    svg.onmousemove = handleBoardHover;
+    svg.onmouseleave = () => {
+      const tip = document.getElementById('sq-tooltip');
+      if (tip) tip.textContent = '\u00A0';
+      clearHighlights(svg);
+    };
+  } else {
+    svg.onmousemove = null;
+    svg.onmouseleave = null;
+  }
+
+  renderSidebar();
+}
+
+// ================================================
+// INTERACTION HANDLERS
+// ================================================
+function sqFromEvent(e) {
+  const rect = svg.getBoundingClientRect();
+  const scaleX = BOARD_SIZE / rect.width;
+  const scaleY = BOARD_SIZE / rect.height;
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top) * scaleY;
+  const c = Math.floor(x / SQ);
+  const r = Math.floor(y / SQ);
+  if (!inBounds(r, c)) return -1;
+  return idx(r, c);
+}
+
+function sqName(index) {
+  return 'abcdefgh'[col(index)] + (8 - row(index));
+}
+
+function handleBoardHover(e) {
+  const i = sqFromEvent(e);
+  if (i < 0) return;
+  const tip = document.getElementById('sq-tooltip');
+  if (tip) tip.textContent = sqName(i);
+  clearHighlights(svg);
+  highlightSquare(svg, i, 'rgba(197,165,90,0.3)');
+}
+
+function handleBoardClick(e) {
+  const lesson = lessons[currentLesson];
+  const i = sqFromEvent(e);
+  if (i < 0) return;
+
+  if (lesson.interact === 'hover') return;
+  if (lesson.interact === 'identify') {
+    // show piece name
+    if (board[i]) {
+      const info = PIECES[board[i]];
+      const colorName = info.color === WHITE
+        ? 'White' : 'Black';
+      const typeName = info.type.charAt(0).toUpperCase()
+        + info.type.slice(1);
+      showFeedback(
+        `${info.symbol} ${colorName} ${typeName}`,
+        'success'
+      );
+    }
+    return;
+  }
+
+  // move/puzzle/free modes
+  if (selectedSq >= 0 && legalMoves.includes(i)) {
+    // make the move
+    const piece = board[selectedSq];
+    const captured = board[i];
+    board[i] = piece;
+    board[selectedSq] = EMPTY;
+    selectedSq = -1;
+    legalMoves = [];
+    moveCount++;
+    clearHighlights(svg);
+    renderPieces(svg, board);
+
+    if (captured) {
+      const ci = PIECES[captured];
+      showFeedback(
+        `Captured the ${ci.color === WHITE ? 'White'
+        : 'Black'} ${ci.type}!`, 'success'
+      );
+    }
+
+    // puzzle check
+    if (lesson.interact === 'puzzle'
+        && lesson.challenge.targetMove) {
+      const tm = lesson.challenge.targetMove;
+      if (i === tm.to) {
+        showFeedback(
+          'Checkmate! Brilliant — the King has no '
+          + 'escape. This is the back-rank mate '
+          + 'pattern you\'ll see throughout '
+          + 'Fischer\'s book.',
+          'success'
+        );
+        completedLessons.add(lesson.id);
+        saveProgress();
+        renderSidebar();
+      }
+    }
+
+    if (moveCount >= 3 && !completedLessons.has(
+        lesson.id) && lesson.interact !== 'puzzle') {
+      completedLessons.add(lesson.id);
+      saveProgress();
+      renderSidebar();
+    }
+    return;
+  }
+
+  // select a piece
+  const piece = board[i];
+  if (piece) {
+    const pc = pieceColor(piece);
+    // in move/puzzle mode, only allow moving
+    // the right color
+    if (lesson.moveColor && pc !== lesson.moveColor) {
+      showFeedback(
+        'That\'s a '
+        + (pc === WHITE ? 'White' : 'Black')
+        + ' piece. Try clicking a '
+        + (lesson.moveColor === WHITE
+          ? 'White' : 'Black')
+        + ' piece instead.',
+        'error'
+      );
+      return;
+    }
+
+    selectedSq = i;
+    legalMoves = getLegalMoves(board, i);
+    clearHighlights(svg);
+    highlightSquare(svg, i, 'var(--highlight)');
+    showMoveIndicators(svg, board, legalMoves);
+
+    const info = PIECES[piece];
+    if (legalMoves.length === 0) {
+      showFeedback(
+        `The ${info.type} has no legal moves from `
+        + `this square.`, 'error'
+      );
+    } else {
+      hideFeedback();
+    }
+  } else {
+    // clicked empty square with no selection
+    selectedSq = -1;
+    legalMoves = [];
+    clearHighlights(svg);
+    hideFeedback();
+  }
+}
+
+function showFeedback(msg, type) {
+  const fb = document.getElementById('feedback');
+  if (!fb) return;
+  fb.textContent = msg;
+  fb.className = 'feedback ' + type;
+}
+function hideFeedback() {
+  const fb = document.getElementById('feedback');
+  if (!fb) return;
+  fb.className = 'feedback';
+}
+
+// ================================================
+// INIT
+// ================================================
+loadProgress();
+loadLesson(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+  content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable"
+  content="yes">
+<meta name="theme-color" content="#1a1612">
+<title>Chess Library</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600&display=swap"
+  rel="stylesheet">
+<style>
+:root {
+  --bg: #1a1612;
+  --raised: #231f1a;
+  --card: #2a2520;
+  --border: #3a3228;
+  --gold: #c5a55a;
+  --text: #d4c8a8;
+  --dim: #8a7e68;
+  --bright: #f0e8d0;
+  --r: 8px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+}
+.header {
+  text-align: center;
+  padding: 40px 20px 20px;
+}
+.logo {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--gold);
+  margin-bottom: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.4);
+}
+.header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  color: var(--bright);
+  margin-bottom: 4px;
+}
+.header h1 span { color: var(--gold); }
+.header p {
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.shelf {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+.shelf h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.books {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,
+    minmax(160px, 1fr));
+  gap: 24px;
+}
+.book-card {
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s;
+}
+.book-card:hover {
+  transform: translateY(-4px);
+}
+.book-cover {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: var(--r);
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  border: 1px solid var(--border);
+}
+.book-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bright);
+  margin-top: 10px;
+  line-height: 1.4;
+}
+.book-author {
+  font-size: 12px;
+  color: var(--dim);
+  margin-top: 2px;
+}
+.book-progress {
+  font-size: 11px;
+  color: var(--gold);
+  margin-top: 4px;
+}
+
+/* Tools section */
+.tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,
+    minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.tool-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+.tool-card:hover {
+  border-color: var(--gold);
+}
+.tool-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+.tool-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bright);
+  margin-bottom: 4px;
+}
+.tool-desc {
+  font-size: 12px;
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+@media (max-width: 500px) {
+  .books {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .header h1 { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <img src="logo.png" alt="Chess Library"
+    class="logo">
+  <h1><span>&#9816;</span> Chess Library</h1>
+  <p>Learn chess through interactive books</p>
+</div>
+
+<div class="shelf">
+  <h2>Books</h2>
+  <div class="books">
+    <a href="bobby-fischer/index.html"
+      class="book-card">
+      <img src="bobby-fischer/cover.jpg"
+        alt="Bobby Fischer Teaches Chess"
+        class="book-cover">
+      <div class="book-title">Bobby Fischer
+        Teaches Chess</div>
+      <div class="book-author">Bobby Fischer,
+        Stuart Margulies, Donn Mosenfelder</div>
+      <div class="book-progress">
+        Chapter 1 ready</div>
+    </a>
+  </div>
+
+  <h2 style="margin-top:40px">Tools</h2>
+  <div class="tools">
+    <a href="trainer/index.html" class="tool-card">
+      <div class="tool-icon">&#9816;</div>
+      <div class="tool-name">Piece Trainer</div>
+      <div class="tool-desc">Learn how each piece
+        moves with interactive lessons</div>
+    </a>
+  </div>
+</div>
+
+</body>
+</html>

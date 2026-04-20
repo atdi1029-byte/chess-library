@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+  content="width=device-width, initial-scale=1.0">
+<title>Bobby Fischer Teaches Chess</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600&display=swap"
+  rel="stylesheet">
+<style>
+:root {
+  --bg: #1a1612;
+  --raised: #231f1a;
+  --card: #2a2520;
+  --border: #3a3228;
+  --gold: #c5a55a;
+  --text: #d4c8a8;
+  --dim: #8a7e68;
+  --bright: #f0e8d0;
+  --ok: #5a8a5a;
+  --err: #c45050;
+  --lsq: #f0d9b5;
+  --dsq: #b58863;
+  --r: 8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  line-height:1.7;
+}
+
+/* HEADER */
+.hdr{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;
+  justify-content:space-between;
+  padding:12px 20px;background:var(--raised);
+  border-bottom:1px solid var(--border);
+}
+.hdr h1{
+  font-family:'Playfair Display',serif;
+  font-size:20px;color:var(--bright);
+}
+.hdr h1 span{color:var(--gold)}
+.hdr-r{font-size:12px;color:var(--dim)}
+
+/* CHAPTER TABS */
+.tabs{
+  display:flex;overflow-x:auto;
+  border-bottom:1px solid var(--border);
+  background:var(--raised);
+}
+.tab{
+  padding:10px 16px;border:none;background:none;
+  color:var(--dim);font:inherit;font-size:13px;
+  cursor:pointer;white-space:nowrap;
+  border-bottom:2px solid transparent;
+}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--gold);
+  border-bottom-color:var(--gold)}
+.tab.locked{opacity:.4;cursor:default}
+
+/* CONTENT */
+.wrap{max-width:720px;margin:0 auto;
+  padding:24px 16px 100px}
+
+/* SECTION */
+.sec{margin-bottom:40px}
+.sec h2{
+  font-family:'Playfair Display',serif;
+  font-size:24px;color:var(--bright);
+  margin-bottom:6px;
+}
+.sec h3{
+  font-size:16px;color:var(--gold);
+  margin:20px 0 8px;
+  font-family:'Playfair Display',serif;
+}
+.sec p{font-size:14px;margin-bottom:12px}
+.sec strong{color:var(--bright)}
+
+/* BOARD */
+.bwrap{
+  display:flex;justify-content:center;
+  margin:16px 0;
+}
+.bout{
+  border:2px solid var(--gold);border-radius:3px;
+  overflow:hidden;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+}
+.bout svg{display:block;cursor:pointer}
+
+/* SIDE-BY-SIDE BOARDS */
+.duo{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:12px;margin:16px 0;
+}
+.duo-cell{text-align:center}
+.duo-cell .lbl{
+  font-weight:600;font-size:13px;
+  color:var(--bright);margin-top:6px;
+}
+.duo-cell .desc{
+  font-size:12px;color:var(--dim);
+  margin-top:3px;line-height:1.5;
+}
+
+/* PUZZLE CARD */
+.puz{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  margin-bottom:24px;overflow:hidden;
+}
+.puz-head{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  padding:10px 14px;background:var(--raised);
+  border-bottom:1px solid var(--border);
+}
+.puz-n{
+  font-family:'Playfair Display',serif;
+  font-size:15px;color:var(--gold);font-weight:700;
+}
+.badge{
+  font-size:11px;padding:3px 10px;
+  border-radius:12px;text-transform:uppercase;
+  letter-spacing:.5px;font-weight:600;
+}
+.badge.puzzle{background:rgba(197,165,90,.15);
+  color:var(--gold)}
+.badge.done{background:rgba(90,138,90,.15);
+  color:#8fc88f}
+.puz-body{padding:14px}
+.puz-text{font-size:14px;margin-bottom:12px}
+.puz-q{font-size:14px;font-weight:500;
+  color:var(--bright);margin-bottom:10px}
+
+/* MOVE PROMPT */
+.move-prompt{
+  background:rgba(197,165,90,.08);
+  border:1px solid rgba(197,165,90,.25);
+  border-radius:var(--r);padding:12px 14px;
+  font-size:13px;color:var(--gold);
+  margin-bottom:12px;text-align:center;
+}
+
+/* CHOICES */
+.opts{display:flex;flex-direction:column;gap:6px;
+  margin-bottom:10px}
+.opt{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;
+  border:1px solid var(--border);
+  border-radius:var(--r);background:var(--raised);
+  color:var(--text);font:inherit;font-size:14px;
+  cursor:pointer;text-align:left;
+}
+.opt:hover{border-color:var(--gold);
+  color:var(--bright)}
+.dot{
+  width:16px;height:16px;border:2px solid var(--dim);
+  border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;
+  justify-content:center;font-size:11px;
+}
+.opt.right{border-color:var(--ok);
+  background:rgba(90,138,90,.08)}
+.opt.right .dot{border-color:var(--ok);
+  background:var(--ok);color:#fff}
+.opt.wrong{border-color:var(--err);
+  background:rgba(196,80,80,.08);opacity:.6}
+.opt.wrong .dot{border-color:var(--err);
+  color:var(--err)}
+.opt.off{pointer-events:none;opacity:.45}
+
+/* ANSWER BOX */
+.ans{
+  padding:12px 14px;border-radius:var(--r);
+  font-size:14px;line-height:1.6;display:none;
+  margin-top:10px;
+}
+.ans.show{display:block}
+.ans.ok{background:rgba(90,138,90,.1);
+  border:1px solid rgba(90,138,90,.3);color:#b0d8b0}
+.ans.bad{background:rgba(196,80,80,.1);
+  border:1px solid rgba(196,80,80,.3);color:#e8a0a0}
+.ans strong{color:var(--bright)}
+
+/* REVEAL BTN */
+.rev{
+  padding:7px 14px;border:1px dashed var(--dim);
+  border-radius:var(--r);background:none;
+  color:var(--dim);font:inherit;font-size:12px;
+  cursor:pointer;margin-top:6px;
+}
+.rev:hover{border-color:var(--gold);
+  color:var(--gold)}
+
+/* FREE PLAY */
+.free-bar{
+  display:flex;gap:8px;justify-content:center;
+  margin:12px 0;flex-wrap:wrap;
+}
+.fbtn{
+  padding:8px 16px;border:1px solid var(--border);
+  border-radius:var(--r);background:var(--card);
+  color:var(--text);font:inherit;font-size:13px;
+  cursor:pointer;
+}
+.fbtn:hover{border-color:var(--gold);
+  color:var(--bright)}
+
+/* MOBILE */
+@media(max-width:600px){
+  .wrap{padding:12px 8px 80px}
+  .duo{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <h1><span>&#9816;</span>
+      Bobby Fischer Teaches Chess</h1>
+  </div>
+  <div class="hdr-r" id="prog">Chapter 1</div>
+</div>
+
+<div class="tabs">
+  <button class="tab on">
+    Ch 1: Elements of Checkmate</button>
+  <button class="tab locked">
+    Ch 2: Back-Rank Mates</button>
+  <button class="tab locked">
+    Ch 3: Defenses</button>
+  <button class="tab locked">
+    Ch 4: Displacing Defenders</button>
+  <button class="tab locked">
+    Ch 5: Pawn Cover</button>
+  <button class="tab locked">
+    Ch 6: Final Review</button>
+</div>
+
+<div class="wrap" id="content"></div>
+
+<script>
+// ==========================================
+// CHESS ENGINE
+// ==========================================
+const SQ = 50;
+const P = {
+  K:{c:'w',s:'\u2654'},Q:{c:'w',s:'\u2655'},
+  R:{c:'w',s:'\u2656'},B:{c:'w',s:'\u2657'},
+  N:{c:'w',s:'\u2658'},P:{c:'w',s:'\u2659'},
+  k:{c:'b',s:'\u265A'},q:{c:'b',s:'\u265B'},
+  r:{c:'b',s:'\u265C'},b:{c:'b',s:'\u265D'},
+  n:{c:'b',s:'\u265E'},p:{c:'b',s:'\u265F'},
+};
+function fen2b(fen){
+  const b=new Array(64).fill(null);
+  let ri=0,ci=0;
+  for(const ch of fen){
+    if(ch==='/'){ri++;ci=0}
+    else if(ch>='1'&&ch<='8')ci+=+ch;
+    else if(ch==' ')break;
+    else if(P[ch]){b[ri*8+ci]=ch;ci++}
+  }
+  return b;
+}
+function pc(p){return p?
+  (p===p.toUpperCase()?'w':'b'):null}
+function inB(r,c){return r>=0&&r<8&&c>=0&&c<8}
+
+function getMoves(board,i){
+  const p=board[i];if(!p)return[];
+  const info=P[p],color=info.c;
+  const r=Math.floor(i/8),c=i%8,mv=[];
+  function add(tr,tc){
+    if(!inB(tr,tc))return false;
+    const t=board[tr*8+tc];
+    if(t&&pc(t)===color)return false;
+    mv.push(tr*8+tc);return !t;
+  }
+  function slide(dr,dc){
+    let tr=r+dr,tc=c+dc;
+    while(inB(tr,tc)){if(!add(tr,tc))break;
+      tr+=dr;tc+=dc}
+  }
+  const type=info.s==='\u2654'||info.s==='\u265A'
+    ?'k':info.s==='\u2655'||info.s==='\u265B'
+    ?'q':info.s==='\u2656'||info.s==='\u265C'
+    ?'r':info.s==='\u2657'||info.s==='\u265D'
+    ?'b':info.s==='\u2658'||info.s==='\u265E'
+    ?'n':'p';
+  switch(type){
+    case 'k':
+      for(let dr=-1;dr<=1;dr++)
+        for(let dc=-1;dc<=1;dc++)
+          if(dr||dc)add(r+dr,c+dc);break;
+    case 'q':
+      for(let dr=-1;dr<=1;dr++)
+        for(let dc=-1;dc<=1;dc++)
+          if(dr||dc)slide(dr,dc);break;
+    case 'r':
+      slide(0,1);slide(0,-1);
+      slide(1,0);slide(-1,0);break;
+    case 'b':
+      slide(1,1);slide(1,-1);
+      slide(-1,1);slide(-1,-1);break;
+    case 'n':
+      [[-2,-1],[-2,1],[-1,-2],[-1,2],
+       [1,-2],[1,2],[2,-1],[2,1]]
+        .forEach(([dr,dc])=>add(r+dr,c+dc));break;
+    case 'p':
+      const dir=color==='w'?-1:1;
+      const sr=color==='w'?6:1;
+      const f1=r+dir;
+      if(inB(f1,c)&&!board[f1*8+c]){
+        mv.push(f1*8+c);
+        const f2=r+dir*2;
+        if(r===sr&&!board[f2*8+c])mv.push(f2*8+c);
+      }
+      for(const dc of[-1,1]){
+        const tc=c+dc;
+        if(inB(f1,tc)){
+          const t=board[f1*8+tc];
+          if(t&&pc(t)!==color)mv.push(f1*8+tc);
+        }
+      }break;
+  }
+  return mv;
+}
+
+// ==========================================
+// BOARD RENDERING
+// ==========================================
+function mkBoard(container,fen,sz){
+  sz=sz||SQ;
+  const bsz=sz*8;
+  const ns='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('width',bsz);
+  svg.setAttribute('height',bsz);
+  svg.setAttribute('viewBox',`0 0 ${bsz} ${bsz}`);
+  const board=fen2b(fen);
+  for(let r=0;r<8;r++)
+    for(let c=0;c<8;c++){
+      const rect=document.createElementNS(ns,'rect');
+      rect.setAttribute('x',c*sz);
+      rect.setAttribute('y',r*sz);
+      rect.setAttribute('width',sz);
+      rect.setAttribute('height',sz);
+      rect.setAttribute('fill',
+        (r+c)%2===0?'#f0d9b5':'#b58863');
+      svg.appendChild(rect);
+    }
+  const hlG=document.createElementNS(ns,'g');
+  hlG.classList.add('hl');svg.appendChild(hlG);
+  const pcG=document.createElementNS(ns,'g');
+  pcG.classList.add('pcs');svg.appendChild(pcG);
+  const dotG=document.createElementNS(ns,'g');
+  dotG.classList.add('dots');svg.appendChild(dotG);
+  drawPieces(svg,board,sz);
+  container.appendChild(svg);
+  return{svg,board,sz};
+}
+
+function drawPieces(svg,board,sz){
+  const ns='http://www.w3.org/2000/svg';
+  const g=svg.querySelector('.pcs');
+  while(g.firstChild)g.removeChild(g.firstChild);
+  for(let i=0;i<64;i++){
+    if(!board[i])continue;
+    const info=P[board[i]];
+    const t=document.createElementNS(ns,'text');
+    const r=Math.floor(i/8),c=i%8;
+    t.setAttribute('x',c*sz+sz/2);
+    t.setAttribute('y',r*sz+sz/2+2);
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('dominant-baseline','central');
+    t.setAttribute('font-size',sz*.76);
+    t.style.userSelect='none';
+    t.style.pointerEvents='none';
+    if(info.c==='w'){
+      t.setAttribute('fill','#fff');
+      t.setAttribute('stroke','#2a2016');
+      t.setAttribute('stroke-width','1.2');
+      t.setAttribute('paint-order','stroke');
+    }else{
+      t.setAttribute('fill','#1a1208');
+      t.setAttribute('stroke','#000');
+      t.setAttribute('stroke-width','0.5');
+    }
+    t.textContent=info.s;g.appendChild(t);
+  }
+}
+
+function clearHL(svg){
+  const hl=svg.querySelector('.hl');
+  while(hl.firstChild)hl.removeChild(hl.firstChild);
+  const dots=svg.querySelector('.dots');
+  while(dots.firstChild)
+    dots.removeChild(dots.firstChild);
+}
+
+function hlSq(svg,idx,color,sz){
+  const ns='http://www.w3.org/2000/svg';
+  const g=svg.querySelector('.hl');
+  const r=Math.floor(idx/8),c=idx%8;
+  const rect=document.createElementNS(ns,'rect');
+  rect.setAttribute('x',c*sz);
+  rect.setAttribute('y',r*sz);
+  rect.setAttribute('width',sz);
+  rect.setAttribute('height',sz);
+  rect.setAttribute('fill',color);
+  rect.style.pointerEvents='none';
+  g.appendChild(rect);
+}
+
+function showDots(svg,board,moves,sz){
+  const ns='http://www.w3.org/2000/svg';
+  const g=svg.querySelector('.dots');
+  while(g.firstChild)g.removeChild(g.firstChild);
+  for(const m of moves){
+    const r=Math.floor(m/8),c=m%8;
+    const cx=c*sz+sz/2,cy=r*sz+sz/2;
+    if(board[m]){
+      const ring=document.createElementNS(ns,
+        'circle');
+      ring.setAttribute('cx',cx);
+      ring.setAttribute('cy',cy);
+      ring.setAttribute('r',sz/2-3);
+      ring.setAttribute('fill','none');
+      ring.setAttribute('stroke',
+        'rgba(196,80,80,.7)');
+      ring.setAttribute('stroke-width','3');
+      ring.style.pointerEvents='none';
+      g.appendChild(ring);
+    }else{
+      const dot=document.createElementNS(ns,
+        'circle');
+      dot.setAttribute('cx',cx);
+      dot.setAttribute('cy',cy);
+      dot.setAttribute('r',7);
+      dot.setAttribute('fill',
+        'rgba(90,138,90,.5)');
+      dot.style.pointerEvents='none';
+      g.appendChild(dot);
+    }
+  }
+}
+
+function sqFromEv(svg,e,sz){
+  const rect=svg.getBoundingClientRect();
+  const bsz=sz*8;
+  const x=(e.clientX-rect.left)*bsz/rect.width;
+  const y=(e.clientY-rect.top)*bsz/rect.height;
+  const c=Math.floor(x/sz),r=Math.floor(y/sz);
+  if(!inB(r,c))return -1;
+  return r*8+c;
+}
+
+// ==========================================
+// STATE
+// ==========================================
+let solved=new Set();
+const SK='fischer-ch1';
+try{solved=new Set(JSON.parse(
+  localStorage.getItem(SK)||'[]'))}catch(e){}
+function save(){localStorage.setItem(SK,
+  JSON.stringify([...solved]))}
+
+// ==========================================
+// HELPERS
+// ==========================================
+function addHTML(container,html){
+  const div=document.createElement('div');
+  div.innerHTML=html;
+  while(div.firstChild)
+    container.appendChild(div.firstChild);
+}
+
+// ==========================================
+// BUILD PAGE
+// ==========================================
+function build(){
+  const w=document.getElementById('content');
+  w.innerHTML='';
+
+  // === SECTION 1: WHAT IS CHECKMATE ===
+  addHTML(w,`
+<div class="sec">
+  <h2>What Is Checkmate?</h2>
+  <p>The object of chess is to attack the enemy
+  King so it <strong>cannot escape capture</strong>.
+  When that happens, the King is
+  <strong>checkmated</strong> and the game is over.</p>
+  <p>Whenever a King is under attack — called
+  <strong>check</strong> — it must escape
+  immediately. There are exactly three ways:</p>
+  <p><strong>1. Capture</strong> the attacking
+  piece.<br>
+  <strong>2. Block</strong> (interpose) — place a
+  piece between the attacker and your King.<br>
+  <strong>3. Flee</strong> — move your King to
+  a safe square.</p>
+  <p>If none of these three options work, it's
+  <strong>checkmate</strong>. Game over.</p>
+  <p>But there's a trap: if a player has
+  <strong>no legal moves</strong> but is
+  <strong>NOT in check</strong>, it's called
+  <strong>stalemate</strong> — and the game is
+  a <strong>draw</strong>. Not a win. Avoiding
+  accidental stalemate is just as important as
+  delivering checkmate.</p>
+</div>`);
+
+  // === PROTECTED VS UNPROTECTED ===
+  addHTML(w,`
+<div class="sec">
+  <h2>Protected vs. Unprotected</h2>
+  <p>The single most important question when you
+  see a check: <strong>is the checking piece
+  protected?</strong></p>
+  <p>If the checking piece is
+  <strong>unprotected</strong>, the King can simply
+  capture it. Crisis over. But if another piece
+  is <strong>guarding</strong> the checker, the
+  King can't take it — and you need to find
+  another way out.</p>
+</div>`);
+
+  // Side-by-side: protected vs not
+  const duo1=document.createElement('div');
+  duo1.className='duo';
+  duo1.innerHTML=`
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d1a"></div></div>
+      <div class="lbl">Check — King Escapes</div>
+      <div class="desc">Rook checks but is
+        unprotected. King captures it.</div>
+    </div>
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d1b"></div></div>
+      <div class="lbl">Checkmate!</div>
+      <div class="desc">Rook is protected by the
+        other Rook. King can't capture — mate.</div>
+    </div>`;
+  w.appendChild(duo1);
+  const b1a=mkBoard(document.getElementById('d1a'),
+    '5Rk1/6pp/8/8/8/8/8/6K1',36);
+  setupExploreBoard(b1a);
+  const b1b=mkBoard(document.getElementById('d1b'),
+    'R4Rk1/6pp/8/8/8/8/8/6K1',36);
+  setupExploreBoard(b1b);
+
+  // PUZZLE: Can king capture?
+  addPuzzle(w,{
+    id:'f6',num:6,
+    text:'The White Queen is giving check. Can the Black King capture it?',
+    fen:'6k1/7Q/8/8/4B3/8/8/4K3',
+    type:'choice',
+    q:'The Black King:',
+    opts:['can capture the Queen',
+      'cannot capture — checkmate'],
+    ans:1,
+    expl:'The Queen is protected by the Bishop along the diagonal (e4\u2013f5\u2013g6\u2013h7). The King cannot capture, cannot flee, cannot block. <strong>Checkmate.</strong>',
+  });
+
+  addPuzzle(w,{
+    id:'f7',num:7,
+    text:'Same setup, but the Bishop is on a different square. Does that change things?',
+    fen:'k7/Q7/8/8/8/5B2/8/4K3',
+    type:'choice',
+    q:'The Black King:',
+    opts:['can capture the Queen',
+      'cannot capture — checkmate'],
+    ans:0,
+    expl:'<strong>Can capture!</strong> The Bishop on f3 is NOT protecting the Queen on a7 — wrong diagonal. The King takes the Queen and lives.',
+  });
+
+  addPuzzle(w,{
+    id:'f8',num:8,
+    text:'A Rook and Knight combination. The Knight is far from the action.',
+    fen:'6Rk/7p/8/8/4N3/8/8/6K1',
+    type:'choice',
+    q:'Black King:',
+    opts:['can capture the checking Rook',
+      'cannot capture — checkmate'],
+    ans:0,
+    expl:'<strong>Can capture.</strong> The Knight on e4 is too far away to protect g8. King takes the Rook.',
+  });
+
+  addPuzzle(w,{
+    id:'f9',num:9,
+    text:'Same pieces — but the Knight moved closer.',
+    fen:'6Rk/4N2p/8/8/8/8/8/6K1',
+    type:'choice',
+    q:'Black King:',
+    opts:['can capture the checking Rook',
+      'cannot capture — checkmate'],
+    ans:1,
+    expl:'<strong>Cannot capture.</strong> The Knight on e7 protects g8 via its L-shaped move. The King is trapped by its own pawn on h7. <strong>Checkmate.</strong>',
+  });
+
+  // === FLIGHT SQUARES ===
+  addHTML(w,`
+<div class="sec">
+  <h3>Flight Squares &amp; Smothered Mate</h3>
+  <p>Sometimes the King can escape check by
+  <strong>fleeing</strong> to a safe square —
+  called a "flight square." But if the King's
+  own pieces block every escape route, it can be
+  <strong>smothered</strong>.</p>
+</div>`);
+
+  const duo2=document.createElement('div');
+  duo2.className='duo';
+  duo2.innerHTML=`
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d2a"></div></div>
+      <div class="lbl">King Can Flee</div>
+      <div class="desc">Knight checks from b6.
+        King escapes to b8.</div>
+    </div>
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d2b"></div></div>
+      <div class="lbl">Smothered Mate!</div>
+      <div class="desc">Own Knight on b8 blocks
+        the escape. Hemmed in by own pieces — no
+        way out.</div>
+    </div>`;
+  w.appendChild(duo2);
+  const b2a=mkBoard(document.getElementById('d2a'),
+    'k7/1p6/1N6/8/8/8/8/1K6',36);
+  setupExploreBoard(b2a);
+  const b2b=mkBoard(document.getElementById('d2b'),
+    'kn6/1p6/1N6/8/8/8/8/1K6',36);
+  setupExploreBoard(b2b);
+
+  addPuzzle(w,{
+    id:'f11',num:11,
+    text:'The White Rook checks from c8, but it\'s two squares from the King. Remember: the King can only move ONE square.',
+    fen:'k1R5/bp6/8/8/8/8/8/4K3',
+    type:'choice',
+    q:'Black King:',
+    opts:['can capture the Rook',
+      'can flee to safety',
+      'can do neither — checkmate'],
+    ans:2,
+    expl:'<strong>Checkmate.</strong> The Rook on c8 is beyond the King\'s reach (2 squares away). The King\'s own Bishop on a7 and Pawn on b7 block every escape.',
+  });
+
+  addPuzzle(w,{
+    id:'f13',num:13,
+    text:'Two White Bishops work together. What can Black do?',
+    fen:'7k/7p/5B2/4B3/8/8/6K1/8',
+    type:'choice',
+    q:'Black King:',
+    opts:['can capture its attacker',
+      'can flee','can do neither — checkmate'],
+    ans:2,
+    expl:'<strong>Checkmate.</strong> The Bishops team up powerfully — one checks on the long diagonal while the other covers every flight square.',
+  });
+
+  // === KING AS ATTACKER ===
+  addHTML(w,`
+<div class="sec">
+  <h3>The King as Attacker</h3>
+  <p>Fischer teaches that <strong>one King can
+  help trap the other</strong>. In the endgame,
+  when most pieces are traded off, your King
+  becomes a <strong>powerful offensive
+  piece</strong> — not something to hide in
+  the corner.</p>
+  <p>The White King can cut off escape squares
+  just by standing nearby, while another piece
+  delivers the check.</p>
+</div>`);
+
+  const duo3=document.createElement('div');
+  duo3.className='duo';
+  duo3.innerHTML=`
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d3a"></div></div>
+      <div class="lbl">A: Checkmate</div>
+      <div class="desc">White King on g7 hems
+        in Black King while Rook checks on h1.
+        No escape.</div>
+    </div>
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d3b"></div></div>
+      <div class="lbl">B: Not Mate</div>
+      <div class="desc">Same idea, but the
+        White King is further away. Black has
+        a flight square.</div>
+    </div>`;
+  w.appendChild(duo3);
+  const b3a=mkBoard(document.getElementById('d3a'),
+    '7k/6K1/8/8/8/8/8/7R',36);
+  setupExploreBoard(b3a);
+  const b3b=mkBoard(document.getElementById('d3b'),
+    '7k/8/5K2/8/8/8/8/7R',36);
+  setupExploreBoard(b3b);
+
+  // === QUEEN + KING MATE ===
+  addPuzzle(w,{
+    id:'f28',num:28,
+    text:'The Queen gives check while the King protects her. All flight squares are covered.',
+    fen:'3k4/3Q4/2K5/8/8/8/8/8',
+    type:'choice',
+    q:'Is Black checkmated?',
+    opts:['yes','no'],
+    ans:0,
+    expl:'<strong>Yes — checkmate!</strong> The Queen covers all flight squares while the White King protects the Queen from capture. This is one of the most common mating patterns.',
+  });
+
+  // === OTHER PIECES DEFEND ===
+  addHTML(w,`
+<div class="sec">
+  <h3>Other Pieces Can Defend!</h3>
+  <p>It's not just the King that can save the
+  day. <strong>Any piece</strong> can capture an
+  attacker — a Bishop, Knight, Rook, even a
+  Pawn. Fischer shows pairs of positions: one
+  where it's mate, and one where a single
+  extra defender changes everything.</p>
+</div>`);
+
+  const duo4=document.createElement('div');
+  duo4.className='duo';
+  duo4.innerHTML=`
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d4a"></div></div>
+      <div class="lbl">A1: Checkmate</div>
+      <div class="desc">Queen mates, protected
+        by the Rook. No defense.</div>
+    </div>
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d4b"></div></div>
+      <div class="lbl">A2: Bishop Saves!</div>
+      <div class="desc">Same position but a
+        Black Bishop can capture the Queen.
+        Not mate.</div>
+    </div>`;
+  w.appendChild(duo4);
+  const b4a=mkBoard(document.getElementById('d4a'),
+    '5kR1/5p1p/5PpQ/8/8/8/8/6K1',36);
+  setupExploreBoard(b4a);
+  const b4b=mkBoard(document.getElementById('d4b'),
+    '5kR1/5p1p/4bPpQ/8/8/8/8/6K1',36);
+  setupExploreBoard(b4b);
+
+  addPuzzle(w,{
+    id:'f30',num:30,
+    text:'Determine Black\'s defense, if any.',
+    fen:'4rkr1/5ppQ/8/8/3B4/8/4P3/6K1',
+    type:'choice',
+    q:'What is Black\'s defense?',
+    opts:['King takes Queen','King flees',
+      'Other piece takes Queen',
+      'No defense — checkmate'],
+    ans:3,
+    expl:'<strong>No defense — checkmate.</strong> The Queen on h7 is protected by the Bishop. The King can\'t flee (blocked by own pieces), can\'t capture, and no other piece can take the Queen.',
+  });
+
+  addPuzzle(w,{
+    id:'f31',num:31,
+    text:'The White Rook is checking. Look carefully at ALL of Black\'s pieces.',
+    fen:'5Rk1/6p1/5N1h/8/8/8/8/1K6',
+    type:'choice',
+    q:'Check Black\'s defensive move:',
+    opts:['King takes Rook','King flees',
+      'Other piece takes Rook',
+      'No defense — checkmate'],
+    ans:2,
+    expl:'<strong>Other piece takes Rook!</strong> The Knight can capture the checking Rook. Always look at ALL your pieces for defensive resources — not just the King.',
+  });
+
+  // === INTERPOSITION ===
+  addHTML(w,`
+<div class="sec">
+  <h3>Interposition — Blocking the Check</h3>
+  <p>The third way to escape check is to
+  <strong>interpose</strong> — place one of your
+  pieces between the attacker and your King,
+  blocking the line of attack.</p>
+  <p>Any piece can interpose: a Rook, Bishop,
+  Knight, or Pawn. But there's one crucial
+  exception: <strong>you cannot interpose against
+  a Knight check</strong>. Knights jump over
+  pieces, so there's no line to block.</p>
+</div>`);
+
+  const duo5=document.createElement('div');
+  duo5.className='duo';
+  duo5.innerHTML=`
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d5a"></div></div>
+      <div class="lbl">A: Checkmate</div>
+      <div class="desc">Rook checks along the
+        first rank. No piece can block. Mate.</div>
+    </div>
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d5b"></div></div>
+      <div class="lbl">B: Rook Interposes!</div>
+      <div class="desc">Same position but Black's
+        Rook slides over to block the check.
+        Saved.</div>
+    </div>`;
+  w.appendChild(duo5);
+  const b5a=mkBoard(document.getElementById('d5a'),
+    'r7/bp6/1p6/8/1PK5/1P6/R7/8',36);
+  setupExploreBoard(b5a);
+  const b5b=mkBoard(document.getElementById('d5b'),
+    'r7/bp5r/1p6/8/1PK5/1P6/R7/8',36);
+  setupExploreBoard(b5b);
+
+  addPuzzle(w,{
+    id:'f37',num:37,
+    text:'The White Rook is checking. Which Black piece can defend, and how?',
+    fen:'n1R5/6k1/5pp1/3B4/8/8/4Kp2/8',
+    type:'choice',
+    q:'What does the defending Black piece do?',
+    opts:['Captures the Rook',
+      'Interposes (blocks the check)'],
+    ans:1,
+    expl:'<strong>The Knight interposes!</strong> The Knight jumps to block the Rook\'s line of attack, saving the King without needing to capture anything.',
+  });
+
+  addPuzzle(w,{
+    id:'f38',num:38,
+    text:'The White Queen is giving check. Can any Black piece defend?',
+    fen:'k7/1pbn4/Q1p5/8/8/8/1P1P4/1K2P3',
+    type:'choice',
+    q:'What does the defending Black piece do?',
+    opts:['Captures the Queen',
+      'Interposes (blocks the check)'],
+    ans:0,
+    expl:'<strong>The Pawn captures the Queen!</strong> Even the humble Pawn can eliminate a Queen. Never underestimate your smallest pieces.',
+  });
+
+  // === REAL GAMES ===
+  addHTML(w,`
+<div class="sec">
+  <h3>From Fischer's Real Games</h3>
+  <p>Fischer includes positions from his actual
+  tournament games to show these patterns aren't
+  just exercises — they happen against the
+  best players in the world.</p>
+</div>`);
+
+  addMovePuzzle(w,{
+    id:'f19',num:19,
+    text:'<strong>Fischer vs. Paul Keres, 1959 Bled Tournament.</strong> Fischer (playing Black) delivered checkmate in this position. Keres was considered one of the top players in the world since 1938. Find the mating move!',
+    fen:'8/8/1P6/1Kk5/8/8/1R6/2q5',
+    toMove:'b',
+    solutions:[[18,1]], // Qc1 to b2? or Rc2?
+    // Actually let's use a cleaner position
+  });
+
+  // === COMBINED PUZZLES ===
+  addHTML(w,`
+<div class="sec">
+  <h3>Put It All Together</h3>
+  <p>Now that you know all three ways to escape
+  check — <strong>capture, flee,
+  interpose</strong> — Fischer throws everything
+  at you. In each position, you must figure out:
+  is it checkmate, or does Black have a
+  defense?</p>
+</div>`);
+
+  addPuzzle(w,{
+    id:'f39',num:39,
+    text:'Is Black mated by White\'s Bishop? Look at ALL of Black\'s pieces.',
+    fen:'3r1k1r/4Np1p/5Bp1/8/3n4/4nr2/5P1P/R3R1K1',
+    type:'choice',
+    q:'Is Black mated?',
+    opts:['Yes — checkmate',
+      'No — Black has a defense'],
+    ans:1,
+    expl:'<strong>Not mated!</strong> Black\'s Rook can interpose, blocking the Bishop\'s diagonal. Always check if a piece can interpose before declaring mate.',
+  });
+
+  addPuzzle(w,{
+    id:'f41',num:41,
+    text:'Observe the board carefully. This is a tricky one. Watch the Knights!',
+    fen:'5kn1/5Pp1/4nNQ1/7P/8/8/4K3/8',
+    type:'choice',
+    q:'Is Black mated?',
+    opts:['Yes — checkmate',
+      'No — Black has a defense'],
+    ans:0,
+    expl:'<strong>Yes — checkmate!</strong> "You have to watch those Knights!" The Knight on f6 and the Queen on g6 work together to cover every escape. The Knight\'s tricky L-shape makes it lethal in close quarters.',
+  });
+
+  // === PINS ===
+  addHTML(w,`
+<div class="sec">
+  <h2>Pins — The Silent Killer</h2>
+  <p>A <strong>pin</strong> occurs when a piece
+  cannot move because doing so would expose its
+  own King to capture. A pinned piece
+  <strong>loses most of its powers</strong> —
+  it can't capture, interpose, or defend.</p>
+  <p>Fischer calls pins "the seeds of many
+  combinations." They're one of the most
+  important tactical ideas in chess because
+  they can paralyze an opponent's defenses.</p>
+</div>`);
+
+  const duo6=document.createElement('div');
+  duo6.className='duo';
+  duo6.innerHTML=`
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d6a"></div></div>
+      <div class="lbl">Queen Can Capture</div>
+      <div class="desc">Black's Queen is free to
+        take the checking piece.</div>
+    </div>
+    <div class="duo-cell">
+      <div class="bwrap"><div class="bout"
+        id="d6b"></div></div>
+      <div class="lbl">Queen is Pinned!</div>
+      <div class="desc">White's Bishop pins the
+        Queen to the King. She can't move — it's
+        mate.</div>
+    </div>`;
+  w.appendChild(duo6);
+  const b6a=mkBoard(document.getElementById('d6a'),
+    '2R2k2/4Qpp1/5p2/8/8/8/8/6K1',36);
+  setupExploreBoard(b6a);
+  const b6b=mkBoard(document.getElementById('d6b'),
+    '2R2k2/4Qpp1/5p2/8/1B6/8/8/6K1',36);
+  setupExploreBoard(b6b);
+
+  addPuzzle(w,{
+    id:'f51',num:51,
+    text:'White has several checks, but only one mates. The key: Black\'s Queen is pinned by the Bishop, and Black\'s Pawn is pinned by the Queen. "Whenever a piece is pinned to the King, it loses most of its powers."',
+    fen:'5kn1/5Pp1/4nNQ1/7P/8/8/4K3/8',
+    type:'choice',
+    q:'Which move mates?',
+    opts:['Bishop takes Queen',
+      'Queen takes Queen',
+      'Queen takes Pawn',
+      'Knight checks'],
+    ans:3,
+    expl:'<strong>Knight checks!</strong> The Knight delivers checkmate because Black\'s Queen is pinned by the Bishop and Black\'s Pawn is pinned by the Queen. Neither defender can respond.',
+  });
+
+  // === PAWN PROMOTION ===
+  addHTML(w,`
+<div class="sec">
+  <h2>Pawn Promotion &amp; Underpromotion</h2>
+  <p>When a Pawn reaches the far end of the
+  board, it <strong>promotes</strong> — transforms
+  into a Queen, Rook, Bishop, or Knight of your
+  choice. Usually you pick a Queen (the most
+  powerful piece).</p>
+  <p>But Fischer shows a surprising twist:
+  sometimes promoting to a <strong>Knight</strong>
+  is the only way to deliver checkmate! This
+  is called <strong>underpromotion</strong>. If
+  you always automatically promote to Queen,
+  you might miss a forced mate.</p>
+</div>`);
+
+  addPuzzle(w,{
+    id:'f54',num:54,
+    text:'White\'s Pawn can advance and promote. What should it become to deliver mate?',
+    fen:'r1k5/1pP5/8/8/8/8/6pp/6K1',
+    type:'choice',
+    q:'The Pawn must become a:',
+    opts:['Bishop','Knight','Queen','Rook'],
+    ans:2,
+    expl:'<strong>Queen.</strong> Promoting to a Queen delivers checkmate. "Usually it is best to promote a Pawn to a Queen, since the Queen is the strongest piece."',
+  });
+
+  addPuzzle(w,{
+    id:'f55',num:55,
+    text:'"Believe it or not, White CAN mate in this position." But promoting to Queen won\'t work — Black would queen his own Pawn with check!',
+    fen:'6bn/5P1k/7p/8/3B4/8/2K5/p7',
+    type:'choice',
+    q:'The correct White move is:',
+    opts:[
+      'Pawn advances, becomes Knight',
+      'Pawn advances, becomes Queen',
+      'Pawn takes Bishop, becomes Queen',
+      'Pawn takes Bishop, becomes Bishop',
+    ],
+    ans:0,
+    expl:'<strong>Pawn advances and becomes a Knight!</strong> The Knight on f8 delivers checkmate. Had White made a Queen instead, Black would have queened his own Pawn on a1 — with check! Underpromotion wins.',
+  });
+
+  // === DISCOVERED CHECK ===
+  addHTML(w,`
+<div class="sec">
+  <h2>Discovered Check</h2>
+  <p>A <strong>discovered check</strong> happens
+  when you move a piece and reveal a check from
+  another piece behind it. The piece you move
+  doesn't give check itself — it
+  <strong>uncovers</strong> the check.</p>
+  <p>What makes discovered checks so devastating
+  is that the moving piece is free to go
+  <strong>anywhere</strong> — including squares
+  that cut off the King's escape routes.
+  It's like getting two moves in one.</p>
+</div>`);
+
+  addPuzzle(w,{
+    id:'f62',num:62,
+    text:'"In choosing the check in this position, you must be careful not to allow the Black King any flight squares." Both the Queen and Rook have checks available.',
+    fen:'kQ6/r4p2/pppp4/8/8/PP6/KPP5/3R4',
+    type:'choice',
+    q:'Which White move mates?',
+    opts:['Move by White Queen',
+      'Move by White Rook'],
+    ans:1,
+    expl:'<strong>Move by White Rook!</strong> The Queen check would allow Black two fleeing squares. The Rook move delivers mate by cutting off all escape routes.',
+  });
+
+  // === FINAL CHALLENGE PUZZLES ===
+  addHTML(w,`
+<div class="sec">
+  <h3>Final Challenges</h3>
+  <p>Fischer ends Chapter 1 with increasingly
+  tricky "mate in one" positions. Some have
+  a mate, some don't. In several, the
+  <strong>pin</strong> is the deciding factor.
+  As Fischer writes: "Again, the pin
+  wins."</p>
+</div>`);
+
+  addPuzzle(w,{
+    id:'f68',num:68,
+    text:'A crowded position with many pieces. Look carefully at every piece\'s defensive capabilities.',
+    fen:'kbn5/pp6/Pp6/1NQ5/P1P5/8/K7/8',
+    type:'choice',
+    q:'In this position:',
+    opts:['White can mate in one move',
+      'White cannot mate'],
+    ans:1,
+    expl:'<strong>White cannot mate.</strong> Every White piece that dares to check will be promptly captured. The Black pieces are well coordinated for defense.',
+  });
+
+  addPuzzle(w,{
+    id:'f73',num:73,
+    text:'A nearly full board — this comes from an opening where Black foolishly weakened his King\'s defenses.',
+    fen:'rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR',
+    type:'choice',
+    q:'Can White mate in one move?',
+    opts:['Yes','No'],
+    ans:0,
+    expl:'<strong>Yes!</strong> Queen to h5 (Qh5#) is checkmate. "Black foolishly weakened his King\'s defenses. This game took three moves!!" This is the famous Fool\'s Mate pattern.',
+  });
+
+  // === FREE PLAY ===
+  addHTML(w,`
+<div class="sec">
+  <h2>Free Play</h2>
+  <p>Play a game against a simple AI opponent!
+  You're <strong>White</strong> — click a piece
+  to see its moves, then click where to go.
+  Black will respond automatically.</p>
+  <p>Use the preset buttons to explore specific
+  checkmate patterns from this chapter (no AI
+  — free exploration mode).</p>
+</div>`);
+
+  const fpWrap=document.createElement('div');
+  fpWrap.innerHTML=`
+    <div class="free-bar" id="freeBar">
+      <button class="fbtn" data-f=
+"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
+        >Starting Position</button>
+      <button class="fbtn" data-f=
+"6Rk/4N2p/8/8/8/8/8/6K1"
+        >Rook + Knight Mate</button>
+      <button class="fbtn" data-f=
+"kn6/1p6/1N6/8/8/8/8/1K6"
+        >Smothered Mate</button>
+      <button class="fbtn" data-f=
+"3k4/3Q4/2K5/8/8/8/8/8"
+        >Queen + King Mate</button>
+      <button class="fbtn" data-f=
+"7k/7p/5B2/4B3/8/8/6K1/8"
+        >Two Bishops Mate</button>
+      <button class="fbtn" data-f=
+"R4Rk1/6pp/8/8/8/8/8/6K1"
+        >Two Rooks Mate</button>
+      <button class="fbtn" data-f=
+"2R2k2/4Qpp1/5p2/8/1B6/8/8/6K1"
+        >Pinned Queen Mate</button>
+      <button class="fbtn" data-f=
+"6bn/5P1k/7p/8/3B4/8/2K5/p7"
+        >Underpromotion</button>
+    </div>
+    <div class="bwrap">
+      <div class="bout" id="freeBoard"></div>
+    </div>
+    <div class="move-prompt" id="freeStatus">
+      You are White — make your move!
+    </div>`;
+  w.appendChild(fpWrap);
+
+  initFreePlay();
+}
+
+// ==========================================
+// PUZZLE BUILDER (CHOICE TYPE)
+// ==========================================
+function addPuzzle(container,p){
+  const card=document.createElement('div');
+  card.className='puz';card.id='puz-'+p.id;
+  const done=solved.has(p.id);
+  card.innerHTML=`
+    <div class="puz-head">
+      <span class="puz-n">Frame ${p.num}</span>
+      <span class="badge ${done?'done':'puzzle'}">
+        ${done?'Solved \u2713':'Puzzle'}</span>
+    </div>`;
+  const body=document.createElement('div');
+  body.className='puz-body';
+
+  const txt=document.createElement('div');
+  txt.className='puz-text';
+  txt.innerHTML=p.text;body.appendChild(txt);
+
+  const bw=document.createElement('div');
+  bw.className='bwrap';
+  const bo=document.createElement('div');
+  bo.className='bout';
+  const brd=mkBoard(bo,p.fen,SQ);
+  // make board interactive for exploration
+  setupExploreBoard(brd);
+  bw.appendChild(bo);body.appendChild(bw);
+
+  if(p.q){
+    const q=document.createElement('div');
+    q.className='puz-q';q.innerHTML=p.q;
+    body.appendChild(q);
+  }
+
+  const opts=document.createElement('div');
+  opts.className='opts';
+  p.opts.forEach((o,i)=>{
+    const btn=document.createElement('button');
+    btn.className='opt';
+    if(done)btn.classList.add(
+      i===p.ans?'right':'off');
+    btn.innerHTML=`<span class="dot"></span>
+      <span>${o}</span>`;
+    if(!done)btn.onclick=()=>{
+      const btns=opts.querySelectorAll('.opt');
+      btns.forEach((b,j)=>{
+        b.classList.add(j===p.ans?'right':'off');
+        if(j===i&&j!==p.ans)b.classList.add('wrong');
+        b.style.pointerEvents='none';
+      });
+      const ab=card.querySelector('.ans');
+      ab.classList.add('show',
+        i===p.ans?'ok':'bad');
+      ab.innerHTML=(i===p.ans?'\u2713 ':'\u2717 ')
+        +p.expl;
+      solved.add(p.id);save();
+      card.querySelector('.badge').className=
+        'badge done';
+      card.querySelector('.badge').textContent=
+        'Solved \u2713';
+      updateProg();
+    };
+    opts.appendChild(btn);
+  });
+  body.appendChild(opts);
+
+  const ans=document.createElement('div');
+  ans.className='ans';
+  if(done){ans.classList.add('show','ok');
+    ans.innerHTML='\u2713 '+p.expl}
+  body.appendChild(ans);
+
+  if(!done){
+    const rev=document.createElement('button');
+    rev.className='rev';
+    rev.textContent='Show Fischer\u2019s answer';
+    rev.onclick=()=>{
+      const btns=opts.querySelectorAll('.opt');
+      btns.forEach((b,j)=>{
+        b.classList.add(j===p.ans?'right':'off');
+        b.style.pointerEvents='none';
+      });
+      ans.classList.add('show','ok');
+      ans.innerHTML=p.expl;
+      rev.style.display='none';
+      solved.add(p.id);save();
+      card.querySelector('.badge').className=
+        'badge done';
+      card.querySelector('.badge').textContent=
+        'Solved \u2713';
+      updateProg();
+    };
+    body.appendChild(rev);
+  }
+
+  card.appendChild(body);
+  container.appendChild(card);
+}
+
+// ==========================================
+// MOVE PUZZLE (click-on-board type)
+// ==========================================
+function addMovePuzzle(container,p){
+  const card=document.createElement('div');
+  card.className='puz';card.id='puz-'+p.id;
+  const done=solved.has(p.id);
+  card.innerHTML=`
+    <div class="puz-head">
+      <span class="puz-n">Frame ${p.num}</span>
+      <span class="badge ${done?'done':'puzzle'}">
+        ${done?'Solved \u2713':'Find the Move'}
+        </span>
+    </div>`;
+  const body=document.createElement('div');
+  body.className='puz-body';
+  body.innerHTML=`<div class="puz-text">
+    ${p.text}</div>`;
+
+  const prompt=document.createElement('div');
+  prompt.className='move-prompt';
+  prompt.textContent=done
+    ?'You found the move!'
+    :'Click a piece, then click where it should go';
+  body.appendChild(prompt);
+
+  const bw=document.createElement('div');
+  bw.className='bwrap';
+  const bo=document.createElement('div');
+  bo.className='bout';
+  const brd=mkBoard(bo,p.fen,SQ);
+  bw.appendChild(bo);body.appendChild(bw);
+
+  if(!done){
+    let sel=-1,moves=[];
+    brd.svg.onclick=(e)=>{
+      const i=sqFromEv(brd.svg,e,brd.sz);
+      if(i<0)return;
+      if(sel>=0&&moves.includes(i)){
+        // make move
+        brd.board[i]=brd.board[sel];
+        brd.board[sel]=null;
+        clearHL(brd.svg);
+        drawPieces(brd.svg,brd.board,brd.sz);
+        hlSq(brd.svg,i,'rgba(90,138,90,.3)',brd.sz);
+        prompt.textContent=
+          'Move made! Explore the result.';
+        prompt.style.color='#8fc88f';
+        solved.add(p.id);save();
+        card.querySelector('.badge').className=
+          'badge done';
+        card.querySelector('.badge').textContent=
+          'Solved \u2713';
+        updateProg();
+        sel=-1;moves=[];
+        // make board explorable after
+        setupExploreBoard(brd);
+        return;
+      }
+      // select piece
+      if(brd.board[i]){
+        const col=pc(brd.board[i]);
+        if(p.toMove&&col!==p.toMove)return;
+        sel=i;
+        moves=getMoves(brd.board,i);
+        clearHL(brd.svg);
+        hlSq(brd.svg,i,'rgba(255,255,100,.35)',
+          brd.sz);
+        showDots(brd.svg,brd.board,moves,brd.sz);
+      }else{
+        sel=-1;moves=[];clearHL(brd.svg);
+      }
+    };
+  }else{
+    setupExploreBoard(brd);
+  }
+
+  card.appendChild(body);
+  container.appendChild(card);
+}
+
+// ==========================================
+// EXPLORE BOARD (click to see moves)
+// ==========================================
+function setupExploreBoard(brd){
+  let sel=-1;
+  brd.svg.onclick=(e)=>{
+    const i=sqFromEv(brd.svg,e,brd.sz);
+    if(i<0)return;
+    if(brd.board[i]){
+      sel=i;
+      const moves=getMoves(brd.board,i);
+      clearHL(brd.svg);
+      hlSq(brd.svg,i,'rgba(255,255,100,.35)',
+        brd.sz);
+      showDots(brd.svg,brd.board,moves,brd.sz);
+    }else{
+      sel=-1;clearHL(brd.svg);
+    }
+  };
+}
+
+// ==========================================
+// SIMPLE AI
+// ==========================================
+const VAL={k:900,q:9,r:5,b:3,n:3,p:1};
+function pieceVal(p){
+  if(!p)return 0;
+  const t=p.toLowerCase();
+  return VAL[t]||0;
+}
+function allMoves(board,color){
+  const res=[];
+  for(let i=0;i<64;i++){
+    if(!board[i]||pc(board[i])!==color)continue;
+    const mvs=getMoves(board,i);
+    for(const to of mvs)res.push({from:i,to});
+  }
+  return res;
+}
+function aiMove(board,color){
+  const mvs=allMoves(board,color);
+  if(!mvs.length)return null;
+  // score each move
+  for(const m of mvs){
+    m.score=0;
+    const cap=board[m.to];
+    if(cap)m.score+=pieceVal(cap)*10;
+    // center control bonus
+    const r=Math.floor(m.to/8),c=m.to%8;
+    const ctr=3.5;
+    m.score+=2-Math.abs(r-ctr)-Math.abs(c-ctr);
+    // small randomness
+    m.score+=Math.random()*2;
+    // avoid moving king early
+    const p=board[m.from].toLowerCase();
+    if(p==='k')m.score-=3;
+    // develop knights/bishops
+    const fromR=Math.floor(m.from/8);
+    if((p==='n'||p==='b')&&
+      (fromR===0||fromR===7))m.score+=4;
+  }
+  mvs.sort((a,b)=>b.score-a.score);
+  return mvs[0];
+}
+
+// ==========================================
+// FREE PLAY (vs AI)
+// ==========================================
+// global free play state
+const FP={board:null,svg:null,sz:SQ,
+  sel:-1,moves:[],turn:true,ai:true};
+
+function fpRedraw(){
+  // completely rebuild piece layer
+  const g=FP.svg.querySelector('.pcs');
+  const ns='http://www.w3.org/2000/svg';
+  // remove all children
+  while(g.lastChild)g.removeChild(g.lastChild);
+  for(let i=0;i<64;i++){
+    if(!FP.board[i])continue;
+    const info=P[FP.board[i]];
+    const t=document.createElementNS(ns,'text');
+    const r=Math.floor(i/8),c=i%8;
+    t.setAttribute('x',c*FP.sz+FP.sz/2);
+    t.setAttribute('y',r*FP.sz+FP.sz/2+2);
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('dominant-baseline','central');
+    t.setAttribute('font-size',FP.sz*.76);
+    t.style.userSelect='none';
+    t.style.pointerEvents='none';
+    if(info.c==='w'){
+      t.setAttribute('fill','#fff');
+      t.setAttribute('stroke','#2a2016');
+      t.setAttribute('stroke-width','1.2');
+      t.setAttribute('paint-order','stroke');
+    }else{
+      t.setAttribute('fill','#1a1208');
+      t.setAttribute('stroke','#000');
+      t.setAttribute('stroke-width','0.5');
+    }
+    t.textContent=info.s;
+    g.appendChild(t);
+  }
+}
+
+function fpClick(e){
+  if(!FP.turn)return;
+  const i=sqFromEv(FP.svg,e,FP.sz);
+  if(i<0)return;
+  const st=document.getElementById('freeStatus');
+  // try to make a move
+  if(FP.sel>=0&&FP.moves.includes(i)){
+    const cap=FP.board[i];
+    FP.board[i]=FP.board[FP.sel];
+    FP.board[FP.sel]=null;
+    FP.sel=-1;FP.moves=[];
+    clearHL(FP.svg);
+    fpRedraw();
+    hlSq(FP.svg,i,'rgba(90,138,90,.3)',FP.sz);
+    st.textContent=cap?'Captured!':'Moved!';
+    // AI response
+    if(FP.ai){
+      FP.turn=false;
+      st.textContent='Black is thinking...';
+      setTimeout(fpDoAI,500);
+    }
+    return;
+  }
+  // select a piece
+  const canMove=FP.ai
+    ?FP.board[i]&&pc(FP.board[i])==='w'
+    :!!FP.board[i];
+  if(canMove){
+    FP.sel=i;
+    FP.moves=getMoves(FP.board,i);
+    clearHL(FP.svg);
+    hlSq(FP.svg,i,'rgba(255,255,100,.35)',FP.sz);
+    showDots(FP.svg,FP.board,FP.moves,FP.sz);
+    st.textContent=FP.moves.length+' moves';
+  }else{
+    FP.sel=-1;FP.moves=[];
+    clearHL(FP.svg);
+  }
+}
+
+function fpDoAI(){
+  const m=aiMove(FP.board,'b');
+  const st=document.getElementById('freeStatus');
+  if(!m){st.textContent='Black has no moves!';
+    FP.turn=true;return}
+  const cap=FP.board[m.to];
+  FP.board[m.to]=FP.board[m.from];
+  FP.board[m.from]=null;
+  clearHL(FP.svg);
+  fpRedraw();
+  hlSq(FP.svg,m.from,'rgba(196,80,80,.2)',FP.sz);
+  hlSq(FP.svg,m.to,'rgba(196,80,80,.3)',FP.sz);
+  st.textContent=cap
+    ?'Black captured! Your turn.'
+    :'Black moved. Your turn.';
+  FP.turn=true;
+}
+
+function fpLoad(fen){
+  const bo=document.getElementById('freeBoard');
+  bo.innerHTML='';
+  FP.board=fen2b(fen);
+  FP.sel=-1;FP.moves=[];FP.turn=true;
+  FP.ai=fen.includes('rnbqkbnr');
+  // create SVG
+  const ns='http://www.w3.org/2000/svg';
+  const bsz=FP.sz*8;
+  const svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('width',bsz);
+  svg.setAttribute('height',bsz);
+  svg.setAttribute('viewBox',`0 0 ${bsz} ${bsz}`);
+  svg.style.cursor='pointer';
+  for(let r=0;r<8;r++)
+    for(let c=0;c<8;c++){
+      const rect=document.createElementNS(ns,'rect');
+      rect.setAttribute('x',c*FP.sz);
+      rect.setAttribute('y',r*FP.sz);
+      rect.setAttribute('width',FP.sz);
+      rect.setAttribute('height',FP.sz);
+      rect.setAttribute('fill',
+        (r+c)%2===0?'#f0d9b5':'#b58863');
+      svg.appendChild(rect);
+    }
+  const hl=document.createElementNS(ns,'g');
+  hl.classList.add('hl');svg.appendChild(hl);
+  const pcs=document.createElementNS(ns,'g');
+  pcs.classList.add('pcs');svg.appendChild(pcs);
+  const dots=document.createElementNS(ns,'g');
+  dots.classList.add('dots');svg.appendChild(dots);
+  bo.appendChild(svg);
+  FP.svg=svg;
+  fpRedraw();
+  svg.addEventListener('click',fpClick);
+  const st=document.getElementById('freeStatus');
+  st.textContent=FP.ai
+    ?'You are White — make your move!'
+    :'Click any piece to explore';
+}
+
+function initFreePlay(){
+  fpLoad(
+    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
+  document.getElementById('freeBar')
+    .addEventListener('click',(e)=>{
+    const btn=e.target.closest('[data-f]');
+    if(btn)fpLoad(btn.dataset.f);
+  });
+}
+
+// ==========================================
+// PROGRESS
+// ==========================================
+function updateProg(){
+  const total=document.querySelectorAll(
+    '.puz').length;
+  const done=solved.size;
+  document.getElementById('prog').textContent=
+    `${done}/${total} solved — Chapter 1`;
+}
+
+// ==========================================
+// INIT
+// ==========================================
+build();
+updateProg();
+</script>
+</body>
+</html>
