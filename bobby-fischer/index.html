@@ -733,6 +733,18 @@ function build(){
   });
 
   addPuzzle(w,{
+    id:'f16',num:16,
+    text:'The White Rook checks from nearby. Can the Black King capture it, or is it protected?',
+    fen:'7k/4Np1R/8/8/8/8/4K3/8',
+    type:'choice',
+    q:'Black King:',
+    opts:['can capture attacker','can flee',
+      'can do neither — checkmate'],
+    ans:0,
+    expl:'<strong>Can capture!</strong> The Rook on h7 is unprotected — the Knight on e7 doesn\'t cover h7. King simply takes the Rook.',
+  });
+
+  addPuzzle(w,{
     id:'f17',num:17,
     text:'Here the lowly <strong>Pawn</strong> is giving check. Even the smallest piece can deliver checkmate with the right support.',
     fen:'rk6/1P6/1KP5/4Q3/8/8/8/8',
@@ -754,6 +766,31 @@ function build(){
       'can do neither — checkmate'],
     ans:2,
     expl:'<strong>Checkmate.</strong> "Checking Rook is protected by Queen. Black is mated." The Queen on f7 guards the Rook on f8 and also covers g6.',
+  });
+
+  addPuzzle(w,{
+    id:'f20',num:20,
+    text:'White\'s Rook has checked and the Black King, having no flight square, is mated. Fischer asks you to identify which White piece guards each escape square. This is the key skill — understanding <strong>why</strong> a position is checkmate.',
+    fen:'1R1kp3/2PNP3/3K4/8/8/8/8/8',
+    type:'choice',
+    q:'Is Black mated?',
+    opts:['Yes — every escape is guarded',
+      'No — Black has a defense'],
+    ans:0,
+    expl:'<strong>Yes — checkmate!</strong> Each escape square is guarded by a different White piece: Pawns, Knights, and the Rook all work together. Fischer teaches you to identify which piece guards which square.',
+  });
+
+  addPuzzle(w,{
+    id:'f21',num:21,
+    text:'A tricky position: Black has <strong>no possible move</strong>, but is <strong>not in check</strong>. What\'s the result?',
+    fen:'5k2/3P1P2/5K2/4N3/8/8/8/8',
+    type:'choice',
+    q:'The result is:',
+    opts:['Checkmate — White wins',
+      'Stalemate — draw',
+      'Black can still move'],
+    ans:1,
+    expl:'<strong>Stalemate — a draw!</strong> No White piece is giving check, but Black has no legal move. This is NOT a win for White. Avoiding accidental stalemate is crucial — always make sure you\'re giving check when you deliver the final blow.',
   });
 
   addPuzzle(w,{
@@ -950,6 +987,19 @@ function build(){
   });
 
   addPuzzle(w,{
+    id:'f33',num:33,
+    text:'The White Queen is giving check. Look at ALL possible escape routes for the Black King.',
+    fen:'3r1k1r/5pQ1/8/8/8/1K6/8/6R1',
+    type:'choice',
+    q:'What is Black\'s defense?',
+    opts:['King takes Queen','King flees',
+      'Other piece takes Queen',
+      'No defense — checkmate'],
+    ans:1,
+    expl:'<strong>King flees!</strong> Even though the position looks cramped, the Black King has an escape square. Always systematically check every adjacent square before declaring checkmate.',
+  });
+
+  addPuzzle(w,{
     id:'f34',num:34,
     text:'A White Bishop is giving check. The Black King is cornered but has friends nearby.',
     fen:'5nk1/5Pp1/6Bp/8/8/6P1/5PK1/8',
@@ -1018,6 +1068,46 @@ function build(){
     // Actually let's use a cleaner position
   });
 
+  addMovePuzzle(w,{
+    id:'f22',num:22,
+    text:'<strong>Fischer vs. Bent Larsen, 1958 Interzonal Tournament, Portoroz.</strong> Fischer (White) delivered a devastating mating blow. Find the winning move!',
+    fen:'3r1b2/1Q2nppk/p2p4/4p2Q/4P3/1PN5/1PP3PP/6K1',
+    toMove:'w',
+  });
+
+  addMovePuzzle(w,{
+    id:'f23',num:23,
+    text:'Black is in check again. Draw an arrow pointing to the <strong>one square</strong> to which Black can flee.',
+    fen:'Q3k3/8/3P4/2KB4/8/8/8/8',
+    toMove:'b',
+  });
+
+  addMovePuzzle(w,{
+    id:'f24',num:24,
+    text:'Again, find Black\'s flight square. The Knight and King cut off most escape routes.',
+    fen:'7k/8/5KN1/7B/8/8/8/8',
+    toMove:'b',
+  });
+
+  addMovePuzzle(w,{
+    id:'f25',num:25,
+    text:'Black appears to be checkmated, but actually he can escape in a slightly different way from what you\'ve been accustomed to. Show how Black\'s King gets out of check.',
+    fen:'8/8/8/2K5/7k/6R1/8/7Q',
+    toMove:'b',
+  });
+
+  addPuzzle(w,{
+    id:'f26',num:26,
+    text:'The Black Queen is giving check. Can White save himself by playing King-takes-Rook?',
+    fen:'Kq6/r7/2k5/8/8/8/8/8',
+    type:'choice',
+    q:'Can White take the Rook?',
+    opts:['Yes — King takes Rook and escapes',
+      'No — checkmate'],
+    ans:1,
+    expl:'<strong>No — checkmate!</strong> The Queen gives check from b8 and also protects the Rook on a7. The White King cannot capture the Rook, cannot flee to b8 (King on c7 guards it), and cannot go to b7 (Queen and Rook cover it). White is mated.',
+  });
+
   // === COMBINED PUZZLES ===
   addHTML(w,`
 <div class="sec">
@@ -1043,6 +1133,18 @@ function build(){
   });
 
   addPuzzle(w,{
+    id:'f40',num:40,
+    text:'A Bishop is giving check. Examine every escape route carefully.',
+    fen:'2n1k3/3Bp2p/6p1/3KB3/8/5n2/8/8',
+    type:'choice',
+    q:'Is Black mated?',
+    opts:['Yes — checkmate',
+      'No — Black has a defense'],
+    ans:1,
+    expl:'<strong>Not mated!</strong> The King can flee. Always check every adjacent square — one of them is safe despite appearances.',
+  });
+
+  addPuzzle(w,{
     id:'f41',num:41,
     text:'Observe the board carefully. This is a tricky one. Watch the Knights!',
     fen:'5kn1/5Pp1/4nNQ1/7P/8/8/4K3/8',
@@ -1055,6 +1157,17 @@ function build(){
   });
 
   addPuzzle(w,{
+    id:'f42',num:42,
+    text:'Here\'s another tricky one. Look at ALL of Black\'s pieces, not just the King.',
+    fen:'4Q1k1/6p1/5pPq/5PpB/3K1kP1/8/8/8',
+    type:'choice',
+    q:'The position is:',
+    opts:['Checkmate','Not checkmate'],
+    ans:1,
+    expl:'<strong>Not checkmate!</strong> The Black Queen can capture the checking piece. Always look at ALL of Black\'s pieces for defensive resources — not just the King.',
+  });
+
+  addPuzzle(w,{
     id:'f43',num:43,
     text:'"You will now see more complex positions that require careful consideration of <strong>every</strong> piece on the board." Which Black piece can defend against mate, and how?',
     fen:'2Q1b1k1/1p1nQpp1/P2n2r1/N1pp4/2PP4/Pp2PP2/KBP5/3R4',
@@ -1064,6 +1177,20 @@ function build(){
       'By interposing'],
     ans:1,
     expl:'<strong>The Rook interposes!</strong> "You have to watch all the pieces on the board and observe how they affect the position." In complex positions, the defense is often hiding in plain sight.',
+  });
+
+  addMovePuzzle(w,{
+    id:'f44',num:44,
+    text:'<strong>Fischer vs. Gligorich, Bled 1961.</strong> Assume White\'s Pawn captures the Black Knight. Fischer (Black) then mates in one move. Find the mating move! Gligorich has been Yugoslavian Champion many times.',
+    fen:'r1b5/1p1k1p2/p2Pp3/4n3/2P1Nn2/1P3p2/PBN2Kpp/R4R2',
+    toMove:'b',
+  });
+
+  addMovePuzzle(w,{
+    id:'f45',num:45,
+    text:'Draw an arrow to show Black\'s defense against checkmate. Remember: watch the <strong>whole</strong> board!',
+    fen:'r4k1r/2Q1pqp1/p4n1p/2p5/8/P7/1PP1PPPP/R4RK1',
+    toMove:'b',
   });
 
   addPuzzle(w,{
@@ -1209,6 +1336,20 @@ function build(){
     expl:'<strong>Queen check is mate!</strong> Black\'s Queen is pinned and cannot interpose. The Rook check is NOT mate because Black\'s Bishop can capture. Always check if defenders are pinned before declaring mate.',
   });
 
+  addPuzzle(w,{
+    id:'f53',num:53,
+    text:'White\'s Queen has a tempting check that LOOKS like mate. But it isn\'t. Why can\'t White\'s Queen deliver checkmate?',
+    fen:'1k6/pnQ5/1p6/8/8/6B1/8/r4K2',
+    type:'choice',
+    q:'Why can\'t White\'s Queen mate?',
+    opts:['Black King can flee',
+      'Black piece can capture Queen',
+      'White\'s Queen is pinned by Black Rook',
+      'Black can interpose'],
+    ans:2,
+    expl:'<strong>White\'s Queen is pinned by the Black Rook!</strong> The Rook on a1 pins the Queen to the White King. Even though Black\'s Queen and Knight are both pinned, White\'s Queen can\'t check because it would expose White\'s own King. A remarkable situation.',
+  });
+
   // === PAWN PROMOTION ===
   addHTML(w,`
 <div class="sec">
@@ -1251,6 +1392,20 @@ function build(){
     ],
     ans:0,
     expl:'<strong>Pawn advances and becomes a Knight!</strong> The Knight on f8 delivers checkmate. Had White made a Queen instead, Black would have queened his own Pawn on a1 — with check! Underpromotion wins.',
+  });
+
+  addPuzzle(w,{
+    id:'f56',num:56,
+    text:'A White Pawn can promote and deliver mate. Should it advance straight ahead or capture the Knight? And what must it become?',
+    fen:'1r1n4/3P4/2P1PPp1/6k1/8/3K4/2R5/8',
+    type:'choice',
+    q:'To mate, the Pawn should:',
+    opts:['Advance straight ahead, become Queen or Rook',
+      'Take the Knight, become Queen',
+      'Advance straight ahead, become Knight',
+      'Take the Knight, become Knight'],
+    ans:0,
+    expl:'<strong>Advance straight ahead, becoming a Queen or Rook!</strong> The promoted piece delivers check on the 8th rank. Sometimes the straightforward approach is the right one.',
   });
 
   // === DISCOVERED CHECK ===
@@ -1306,6 +1461,69 @@ function build(){
     expl:'<strong>Rook to h4!</strong> The Rook slides to h4, and the Bishop on d2 is revealed checking the King on h7 through the diagonal. The Rook on h4 covers h-file escape squares. Beautiful discovered checkmate.',
   });
 
+  addPuzzle(w,{
+    id:'f57',num:57,
+    text:'A review position. White\'s Queen and Knight both have checks available. But only one of them delivers mate.',
+    fen:'Q1r3r1/3pqQp1/pp2b2p/4N3/3P4/7N/PPP2PPP/4R1K1',
+    type:'choice',
+    q:'Which piece delivers mate?',
+    opts:['Queen mates','Knight mates',
+      'Neither can mate'],
+    ans:1,
+    expl:'<strong>Knight mates!</strong> Neither Queen check delivers mate, but the Knight check is devastating. The Black Pawn that could block is pinned by the White Rook.',
+  });
+
+  addPuzzle(w,{
+    id:'f58',num:58,
+    text:'The Queen has several checks from squares A, B, C, and D. Only one delivers mate. Be careful — each wrong check allows the King to escape.',
+    fen:'7k/4N1p1/4Q2p/6pB/8/1b1p4/3K4/Q7',
+    type:'choice',
+    q:'The only check that mates is at square:',
+    opts:['A (Queen to a8)','B (Queen to d7)',
+      'C (Queen to g8)','D (Queen to h3)'],
+    ans:3,
+    expl:'<strong>Square D!</strong> Only this Queen check covers all the flight squares simultaneously. The other checks each leave at least one escape route open.',
+  });
+
+  addMovePuzzle(w,{
+    id:'f59',num:59,
+    text:'White\'s Queen and Knight have checks. Find the mating move. This position is a <strong>smothered mate</strong> — Black\'s own pieces prevent the King from fleeing.',
+    fen:'kr6/pp6/Np6/QN6/8/2P5/1PB5/1K6',
+    toMove:'w',
+  });
+
+  addMovePuzzle(w,{
+    id:'f60',num:60,
+    text:'White\'s Pawn, Queen, and Rook all have checks. Only one move delivers mate. Find it!',
+    fen:'7k/1Qn5/4pppp/5P2/8/6B1/rr4PP/4R1K1',
+    toMove:'w',
+  });
+
+  addPuzzle(w,{
+    id:'f61',num:61,
+    text:'White\'s Pawn and Queen can both check. But only one of them delivers mate.',
+    fen:'4QRk1/5n1p/2Q1pBP1/p7/P7/1B6/P7/1K6',
+    type:'choice',
+    q:'Which one mates?',
+    opts:['Pawn','Queen'],
+    ans:0,
+    expl:'<strong>Pawn!</strong> Black\'s Rook is pinned by the Bishop, but it would be free to interpose if the White Queen checked. The Pawn check, however, cannot be blocked — the pinned Rook can\'t help. The pin decides everything.',
+  });
+
+  addMovePuzzle(w,{
+    id:'f64',num:64,
+    text:'"I\'ve made the positions a little tricky, so be careful!" In this position there are <strong>four</strong> checks, but only <strong>one</strong> mate. Be accurate! Black threatens mate, too.',
+    fen:'r7/1p3ppk/p3pP1p/4Q3/4n3/Pb1B1N2/1P2P3/K1R5',
+    toMove:'w',
+  });
+
+  addMovePuzzle(w,{
+    id:'f65',num:65,
+    text:'Here is the second tricky position. Again, find the mate by selecting the right move. The Black Rook is pinned by one of White\'s Bishops.',
+    fen:'7k/7p/5rQ1/4pb2/3B4/1B6/K7/6R1',
+    toMove:'w',
+  });
+
   // === FINAL CHALLENGE PUZZLES ===
   addHTML(w,`
 <div class="sec">
@@ -1328,6 +1546,18 @@ function build(){
       'White cannot mate'],
     ans:0,
     expl:'<strong>White can mate in one move.</strong> The Knight and Queen work together — the Queen delivers check while the Knight and Pawn control the escape squares.',
+  });
+
+  addPuzzle(w,{
+    id:'f67',num:67,
+    text:'A complex position with many pieces. Can White deliver mate in one move?',
+    fen:'Q3r1k1/5ppp/2p1pn2/n7/B4P2/P1P5/KP4PP/3R4',
+    type:'choice',
+    q:'In this position:',
+    opts:['White can mate in one move',
+      'White cannot mate'],
+    ans:0,
+    expl:'<strong>White can mate in one move.</strong> The Queen delivers the killing blow from the perfect square, cutting off all escape routes while being protected.',
   });
 
   addPuzzle(w,{
@@ -1367,6 +1597,29 @@ function build(){
   });
 
   addPuzzle(w,{
+    id:'f69',num:69,
+    text:'A position from Fischer\'s game with Otteson (1957). Can White mate in one move?',
+    fen:'4r3/3rkp2/5pp1/3P4/6N1/6P1/3PPKBR/1q6',
+    type:'choice',
+    q:'Can White mate in one move?',
+    opts:['Yes','No'],
+    ans:1,
+    expl:'<strong>No!</strong> The Knight check is met by the Queen\'s capture of the Knight. This position is from Fischer\'s game with Otteson [White] in 1957. Sometimes the defense holds.',
+  });
+
+  addPuzzle(w,{
+    id:'f72',num:72,
+    text:'White has two Rooks working together. Can White deliver mate in one move?',
+    fen:'3r1rk1/5p1p/8/R7/8/5R2/6PP/5BK1',
+    type:'choice',
+    q:'In this position:',
+    opts:['White can mate in one move',
+      'White cannot mate'],
+    ans:0,
+    expl:'<strong>White can mate!</strong> One of White\'s Rooks keeps the Black King imprisoned while the other delivers the mate. The two Rooks working together are devastatingly efficient.',
+  });
+
+  addPuzzle(w,{
     id:'f73',num:73,
     text:'A nearly full board — this comes from an opening where Black foolishly weakened his King\'s defenses.',
     fen:'rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR',
@@ -1375,6 +1628,40 @@ function build(){
     opts:['Yes','No'],
     ans:0,
     expl:'<strong>Yes!</strong> Queen to h5 (Qh5#) is checkmate. "Black foolishly weakened his King\'s defenses. This game took three moves!!" This is the famous Fool\'s Mate pattern.',
+  });
+
+  addPuzzle(w,{
+    id:'f74',num:74,
+    text:'A tricky position. Think carefully before declaring mate.',
+    fen:'4r1k1/3Q1p1p/4b1p1/8/5P2/6P1/1b2P2P/4KB1R',
+    type:'choice',
+    q:'In this position:',
+    opts:['White can mate in one move',
+      'White cannot mate'],
+    ans:1,
+    expl:'<strong>White cannot mate.</strong> Every check White can deliver is met by a defensive resource. Sometimes the position looks promising but the defense holds firm.',
+  });
+
+  addPuzzle(w,{
+    id:'f75',num:75,
+    text:'This is a position from one of Fischer\'s games (vs. Surgies). Can Black deliver checkmate in one move?',
+    fen:'3rrk2/1pp2ppp/p1n5/3P4/2P2p2/1Pn2BK1/P2R4/RQ6',
+    type:'choice',
+    q:'Can Black mate in one move?',
+    opts:['Yes','No'],
+    ans:0,
+    expl:'<strong>Yes!</strong> Black can deliver checkmate. Fischer found the killing blow in this game. Always look for forcing moves that leave the opponent\'s King with no escape.',
+  });
+
+  addPuzzle(w,{
+    id:'f76',num:76,
+    text:'Can White mate in one move? Observe <strong>both</strong> Black Bishops carefully.',
+    fen:'7k/p5pp/1p1r4/3b4/1R2P3/P4P2/6PP/4KB1R',
+    type:'choice',
+    q:'Can White mate in one move?',
+    opts:['Yes','No'],
+    ans:1,
+    expl:'<strong>No!</strong> "Observe both Black Bishops." The Bishops provide defensive resources that prevent White from delivering mate. Always check what the opponent\'s pieces control before declaring checkmate.',
   });
 
   addPuzzle(w,{
@@ -1397,6 +1684,18 @@ function build(){
     opts:['Yes','No'],
     ans:0,
     expl:'<strong>Yes!</strong> "Pawn mates by becoming a Queen or a Rook. Note that the White Bishop, which is itself pinned, pins one of the Black Rooks." A pinned piece can still pin another piece — a beautiful tactical idea.',
+  });
+
+  addPuzzle(w,{
+    id:'f79',num:79,
+    text:'The final challenge of Chapter 1. "Again, the pin wins." Can White deliver mate in one move?',
+    fen:'1Q3bkr/P1p1pppp/2Pp1n2/1N6/8/r7/1PPK1PPP/R1B4R',
+    type:'choice',
+    q:'Can White mate in one move?',
+    opts:['Yes — White can mate',
+      'No — White cannot mate'],
+    ans:0,
+    expl:'<strong>Yes!</strong> "Again, the pin wins." A pinned piece is powerless to defend. This is the perfect ending to Chapter 1 — the pin is the thread that ties together everything Fischer has taught you about the elements of checkmate.',
   });
 
   // === CHAPTER SUMMARY ===
