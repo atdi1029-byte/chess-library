@@ -66,11 +66,14 @@ export class Player {
       </header>
       <div class="progress"><div class="progress-fill"></div></div>
       <main class="stage">
-        <section class="board-wrap"><div class="board-frame"><div id="board"></div></div><div class="turn"></div></section>
+        <section class="board-wrap"><div class="board-frame"><div id="board"></div></div></section>
         <section class="card">
           <div class="card-scroll">
-            <div class="eyebrow"><span class="seal"></span><span class="kind"></span><span class="pips"></span></div>
-            <h1 class="title"></h1>
+            <div class="head">
+              <span class="seal"></span>
+              <div class="head-text"><div class="kind"></div><h1 class="title"></h1></div>
+              <div class="head-side"><div class="pips"></div><div class="turn"></div></div>
+            </div>
             <div class="say"></div>
             <div class="ask"></div>
             <div class="choices"></div>
@@ -92,18 +95,19 @@ export class Player {
     this.ui = {
       book: q('.bar-book'), chapter: q('.bar-chapter'), count: q('.bar-count'), fill: q('.progress-fill'),
       turn: q('.turn'), seal: q('.seal'), kind: q('.kind'), pips: q('.pips'), title: q('.title'), say: q('.say'),
-      ask: q('.ask'), choices: q('.choices'), feedback: q('.feedback'), scroll: q('.card-scroll'),
+      ask: q('.ask'), choices: q('.choices'), feedback: q('.feedback'), scroll: q('.card-scroll'), card: q('.card'),
       back: q('.back'), hint: q('.hint'), show: q('.show'), next: q('.next'),
       drawer: q('.drawer'), drawerBody: q('.drawer-body'),
     };
     this.board = new Board(q('#board'));
-    this.ui.book.textContent = book.title;
     this.ui.back.onclick = () => this.go(-1);
     this.ui.next.onclick = () => this.go(1);
     this.ui.hint.onclick = () => this.hint();
     this.ui.show.onclick = () => this.reveal();
     this.ui.count.onclick = () => this.openDrawer();
     q('.drawer-close').onclick = () => { this.ui.drawer.hidden = true; };
+    this.ui.scroll.addEventListener('scroll', () => this.fade(), { passive: true });
+    window.addEventListener('resize', () => this.fade());
     this.ui.drawer.onclick = e => { if (e.target === this.ui.drawer) this.ui.drawer.hidden = true; };
     document.addEventListener('keydown', e => {
       if (e.target.closest('input, textarea')) return;
@@ -194,12 +198,13 @@ export class Player {
     const opening = this.last ? [] : step.arrows || [];   // pointers drawn for the starting position only
     this.board.arrows([...opening, ...this.kept, ...solvedArrows, ...(extraArrows || [])]);
     const t = this.chess.turn();
-    this.ui.turn.innerHTML = `<span class="turn-dot ${t}"></span>${sideName(t)} to move`;
+    this.ui.turn.innerHTML = `<span class="turn-dot ${t}"></span>${sideName(t)}<span class="turn-rest"> to move</span>`;
   }
 
   paint() {
     const step = this.step, frame = this.frame, ui = this.ui;
-    ui.chapter.textContent = `${this.ch.n ? 'Chapter ' + this.ch.n + ' · ' : ''}${this.ch.title}`;
+    ui.book.textContent = `${this.ch.n ? 'Chapter ' + this.ch.n + ' · ' : ''}${this.book.title}`;
+    ui.chapter.textContent = this.ch.title;
     ui.count.textContent = `${this.f + 1} / ${this.ch.frames.length}`;
     ui.fill.style.width = `${((this.f + (this.s + 1) / frame.steps.length) / this.ch.frames.length) * 100}%`;
     ui.seal.textContent = frame.n;
@@ -217,6 +222,7 @@ export class Player {
     ui.hint.disabled = ui.show.disabled = false;
     this.paintNext();
     ui.scroll.scrollTop = 0;
+    this.fade();
   }
   askText() {
     const step = this.step;
@@ -232,13 +238,20 @@ export class Player {
     const lastStep = this.f === this.ch.frames.length - 1 && this.s === this.frame.steps.length - 1;
     ui.next.textContent = ready ? (lastStep ? 'Finish' : 'Next') : 'Skip';
   }
+  // fade the bottom edge of the lesson text only while there is more to scroll to
+  fade() {
+    const sc = this.ui.scroll;
+    sc.classList.toggle('more', sc.scrollHeight - sc.scrollTop - sc.clientHeight > 6);
+  }
   feedback(kind, html) {
     const box = this.ui.feedback;
     box.hidden = !kind;
-    if (!kind) return;
+    this.ui.card.classList.toggle('has-feedback', !!kind);   // on a phone the intro text makes room for it
+    if (!kind) return this.fade();
     box.className = 'feedback ' + kind;
     box.innerHTML = html;
-    box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    box.scrollIntoView({ block: 'nearest' });
+    this.fade();
   }
 
   // ---------- the tasks ----------
@@ -315,10 +328,21 @@ export class Player {
         'king-takes': 'The King captures the attacker.', flee: 'The King steps out of the line of fire.',
         'piece-takes': `The ${NAME[made.piece]} captures the attacker.`, block: `The ${NAME[made.piece]} blocks the check.`,
       }[escapeKind(made)];
-      return this.finish(this.chess.isCheckmate() ? 'Out of check, and it is checkmate the other way.' : how);
+      // the lesson's own explanation says it better; the plain description is the fallback
+      return this.finish(this.chess.isCheckmate() ? 'Out of check, and it is checkmate the other way.' : step.done ? '' : how);
     }
 
     if (step.task === 'survive') {
+      const killer = this.mateWithin(step.n || 1);
+      if (killer) {
+        this.mistakes++;
+        this.feedback('no', `That does not help: ${sideName(this.chess.turn())} plays <b>${bare(killer.san)}</b>${killer.san.includes('#') ? ', mate.' : ' and mate follows.'}`);
+        this.busy = true;
+        await sleep(700);
+        if (run !== this.run) return;
+        this.make(killer, [[killer.from, killer.to, 'red']]);
+        return this.takeBack(run, 1800);
+      }
       if (step.sol && !step.sol.map(bare).includes(san)) {
         // it avoids mate, but the lesson wants the defence that costs nothing
         this.mistakes++;
@@ -332,15 +356,7 @@ export class Player {
         }
         return this.takeBack(run, 1800);
       }
-      const killer = this.mateWithin(step.n || 1);
-      if (!killer) return this.finish(`That holds. ${sideName(this.chess.turn())} has no mate.`);
-      this.mistakes++;
-      this.feedback('no', `That does not help: ${sideName(this.chess.turn())} plays <b>${bare(killer.san)}</b>${killer.san.includes('#') ? ', mate.' : ' and mate follows.'}`);
-      this.busy = true;
-      await sleep(700);
-      if (run !== this.run) return;
-      this.make(killer, [[killer.from, killer.to, 'red']]);
-      return this.takeBack(run, 1800);
+      return this.finish(`That holds. ${sideName(this.chess.turn())} has no mate.`);
     }
 
     if (step.task === 'mate') {

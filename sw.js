@@ -1,6 +1,6 @@
 // Offline support. Fresh copies come from the network whenever there is one;
 // the cache is only the fallback, so a new version shows up on the next load.
-const CACHE = 'chess-library-v2';
+const CACHE = 'chess-library-v3';
 const CORE = [
   './', './index.html', './manifest.json', './icons/logo-96.png', './icons/logo-192.png',
   './app/app.css', './app/board.js', './app/pieces.js', './app/player.js', './app/rules.js', './app/vendor/chess.js',
