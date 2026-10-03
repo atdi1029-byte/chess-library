@@ -12,7 +12,7 @@
 <title>Chess Library</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app/app.css?v=2">
+<link rel="stylesheet" href="app/app.css?v=3">
 <style>
 body { overflow-y: auto; overscroll-behavior: auto; }
 .shelf { max-width: 760px; margin: 0 auto; padding: 34px 20px 60px; }
@@ -32,6 +32,8 @@ body { overflow-y: auto; overscroll-behavior: auto; }
 .book-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--gold-hi)); }
 .book-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 9px; font-size: 13px; color: var(--dim); }
 .book-go { background: linear-gradient(180deg, var(--gold-hi), var(--gold)); color: #1c1608; font-weight: 700; padding: 8px 16px; border-radius: 9px; white-space: nowrap; }
+.due-link { display: block; margin-top: 10px; padding: 11px 16px; border-radius: 12px; border: 1px solid rgba(201, 169, 97, .55); background: rgba(201, 169, 97, .1); color: var(--gold-hi); text-decoration: none; font-weight: 600; }
+.due-link[hidden] { display: none; }
 .tool { display: block; text-decoration: none; color: inherit; background: var(--navy); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
 .tool:hover { border-color: var(--gold); }
 .tool b { color: var(--bright); display: block; font-weight: 600; }
@@ -56,9 +58,10 @@ body { overflow-y: auto; overscroll-behavior: auto; }
       <div class="book-by">Bobby Fischer, Stuart Margulies, Donn Mosenfelder</div>
       <div class="book-what">Every frame of the book as a position on one board. You make the moves; the board explains what works and what does not.</div>
       <div class="book-bar"><i id="bf-bar"></i></div>
-      <div class="book-row"><span id="bf-status">Chapter 1 ready</span><span class="book-go" id="bf-go">Start</span></div>
+      <div class="book-row"><span id="bf-status"></span><span class="book-go" id="bf-go">Start</span></div>
     </div>
   </a>
+  <a class="due-link" id="bf-due" href="bobby-fischer/index.html?review=1" hidden></a>
 
   <h2>Tools</h2>
   <a class="tool" href="trainer/index.html"><b>Piece trainer</b><span>How each piece moves, one lesson at a time.</span></a>
@@ -67,25 +70,32 @@ body { overflow-y: auto; overscroll-behavior: auto; }
 </div>
 <script type="module">
 import book from './bobby-fischer/book.js';
-// progress on the shelf: frames finished out of the frames that are built
-let saved = { steps: {}, pos: null };
-try { saved = Object.assign(saved, JSON.parse(localStorage.getItem('chesslib:' + book.id) || '{}')); } catch (e) { /* private mode */ }
-let total = 0, done = 0, built = 0;
-for (const meta of book.chapters.filter(c => c.file)) {
-  built++;
-  const ch = (await import('./bobby-fischer/' + meta.file)).default;
-  for (const fr of ch.frames) {
-    const tasks = fr.steps.map((s, i) => (s.task ? `${ch.id}.${fr.n}.${i}` : null)).filter(Boolean);
-    if (!tasks.length) continue;
+import { Store } from './app/store.js';
+import { Sync } from './app/sync.js';
+// progress on the shelf: frames finished out of the frames that are built, and reviews due
+const store = new Store(book.id), sync = new Sync(store);
+const chapters = [];
+for (const meta of book.chapters.filter(c => c.file)) chapters.push((await import('./bobby-fischer/' + meta.file)).default);
+function show() {
+  let total = 0, done = 0;
+  for (const ch of chapters) for (const fr of ch.frames) {
+    if (!fr.steps.some(s => s.task)) continue;
     total++;
-    if (tasks.every(k => saved.steps[k])) done++;
+    if (store.frameStatus(ch.id, fr)) done++;
   }
+  const cards = store.cards();
+  document.getElementById('bf-bar').style.width = (total ? (done / total) * 100 : 0) + '%';
+  const bits = [done ? `${done} of ${total} frames done` : `${chapters.length} of ${book.chapters.length} chapters built, ${total} frames`];
+  if (cards.learning || cards.mature) bits.push(`${cards.learning} learning, ${cards.mature} mature`);
+  document.getElementById('bf-status').textContent = bits.join(' \u00b7 ');
+  document.getElementById('bf-go').textContent = store.data.pos ? 'Continue' : 'Start';
+  const due = document.getElementById('bf-due');
+  due.hidden = !cards.due;
+  due.textContent = `Review ${cards.due} missed ${cards.due === 1 ? 'position' : 'positions'}`;
 }
-document.getElementById('bf-bar').style.width = (total ? (done / total) * 100 : 0) + '%';
-document.getElementById('bf-status').textContent = done
-  ? `${done} of ${total} frames done`
-  : `${built} of ${book.chapters.length} chapters built, ${total} frames`;
-document.getElementById('bf-go').textContent = saved.pos ? 'Continue' : 'Start';
+show();
+sync.pull().then(show);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sync.pull().then(show); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>

@@ -17,6 +17,8 @@
 //   demo    moves played out on the board once solved (or at once on a reading step)
 //   arrows, marks, labels   drawn from the start
 import { Board } from './board.js';
+import { Store, LADDER } from './store.js';
+import { Sync } from './sync.js';
 import {
   Chess, load, pieceMap, kingSquare, explainIllegal, escapeKind, bestEscape,
   describeEscape, matingMoves, forcedMate, spoiler, NAME,
@@ -25,43 +27,21 @@ import {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const bare = san => san.replace(/[+#?!]/g, '');
 const sideName = c => (c === 'w' ? 'White' : 'Black');
-const RANK = { ok: 3, retry: 2, shown: 1 };
-
-class Store {
-  constructor(bookId) {
-    this.key = 'chesslib:' + bookId;
-    this.data = { pos: null, steps: {} };
-    try { Object.assign(this.data, JSON.parse(localStorage.getItem(this.key) || '{}')); } catch (e) { /* private mode */ }
-  }
-  save() { try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) { /* private mode */ } }
-  mark(key, status) {
-    if ((RANK[this.data.steps[key]] || 0) < RANK[status]) { this.data.steps[key] = status; this.save(); }
-  }
-  frameStatus(ch, frame) {
-    let worst = 'ok', tasks = 0;
-    frame.steps.forEach((s, i) => {
-      if (!s.task) return;
-      tasks++;
-      const st = this.data.steps[`${ch}.${frame.n}.${i}`];
-      if (!st) worst = null;
-      else if (worst && RANK[st] < RANK[worst]) worst = st;
-    });
-    if (!tasks) return this.data.steps[`${ch}.${frame.n}.read`] ? 'ok' : null;
-    return worst;
-  }
-}
 
 export class Player {
   constructor(book, base, host) {
     this.book = book;
     this.base = base;
     this.store = new Store(book.id);
+    this.sync = new Sync(this.store);
+    this.review = null;             // {queue, i, counted, clean, missed} while reviewing missed steps
     this.chapters = {};
     this.run = 0;
     host.innerHTML = `
       <header class="bar">
         <a class="bar-home" href="../index.html" aria-label="Back to the library"><img src="../icons/logo-96.png" alt=""></a>
         <div class="bar-title"><div class="bar-book"></div><div class="bar-chapter"></div></div>
+        <span class="bar-sync" title="Saved to the cloud"></span>
         <button class="bar-count" type="button" aria-label="Contents"></button>
       </header>
       <div class="progress"><div class="progress-fill"></div></div>
@@ -69,6 +49,7 @@ export class Player {
         <section class="board-wrap"><div class="board-frame"><div id="board"></div></div></section>
         <section class="card">
           <div class="card-scroll">
+            <button class="due" type="button" hidden></button>
             <div class="head">
               <span class="seal"></span>
               <div class="head-text"><div class="kind"></div><h1 class="title"></h1></div>
@@ -97,7 +78,7 @@ export class Player {
       turn: q('.turn'), seal: q('.seal'), kind: q('.kind'), pips: q('.pips'), title: q('.title'), say: q('.say'),
       ask: q('.ask'), choices: q('.choices'), feedback: q('.feedback'), scroll: q('.card-scroll'), card: q('.card'),
       back: q('.back'), hint: q('.hint'), show: q('.show'), next: q('.next'),
-      drawer: q('.drawer'), drawerBody: q('.drawer-body'),
+      drawer: q('.drawer'), drawerBody: q('.drawer-body'), due: q('.due'), syncMark: q('.bar-sync'),
     };
     this.board = new Board(q('#board'));
     this.ui.back.onclick = () => this.go(-1);
@@ -105,6 +86,11 @@ export class Player {
     this.ui.hint.onclick = () => this.hint();
     this.ui.show.onclick = () => this.reveal();
     this.ui.count.onclick = () => this.openDrawer();
+    this.ui.due.onclick = () => this.startReview();
+    this.sync.onStatus = st => { this.ui.syncMark.dataset.state = st; this.ui.syncMark.title = { ok: 'Saved to the cloud', syncing: 'Syncing', offline: 'Not synced yet (offline?)', idle: '' }[st]; };
+    // coming back to the app: fetch what the other device did, and follow it if it is further along
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') this.refresh(); });
+    window.addEventListener('online', () => this.refresh());
     q('.drawer-close').onclick = () => { this.ui.drawer.hidden = true; };
     this.ui.scroll.addEventListener('scroll', () => this.fade(), { passive: true });
     window.addEventListener('resize', () => this.fade());
@@ -120,7 +106,14 @@ export class Player {
     const pos = this.store.data.pos;
     const first = this.book.chapters.find(c => c.file);
     const ch = pos && this.book.chapters.find(c => c.id === pos.ch && c.file) ? pos.ch : first.id;
-    await this.open(ch, pos && pos.ch === ch ? pos.f : 0, pos && pos.ch === ch ? pos.s : 0);
+    await this.open(ch, pos && pos.ch === ch ? pos.f : 0, pos && pos.ch === ch ? pos.s : 0, false);
+  }
+  // pull from the cloud; if the saved place moved (the other device went on), go there
+  async refresh() {
+    const res = await this.sync.pull();
+    if (!res) return;
+    if (res.posMoved && !this.review && !this.midSolve) await this.start();
+    else this.paintDue();
   }
 
   async chapter(id) {
@@ -131,24 +124,29 @@ export class Player {
     return this.chapters[id];
   }
 
-  async open(chId, f = 0, s = 0) {
+  async open(chId, f = 0, s = 0, mine = true) {
     this.ch = await this.chapter(chId);
     this.f = Math.max(0, Math.min(f, this.ch.frames.length - 1));
     this.s = Math.max(0, Math.min(s, this.frame.steps.length - 1));
     this.ended = false;
-    this.enter();
+    this.review = null;
+    this.enter(mine);
   }
   get frame() { return this.ch.frames[this.f]; }
   get step() { return this.frame.steps[this.s]; }
   get stepKey() { return `${this.ch.id}.${this.frame.n}.${this.s}`; }
+  // in the middle of working a position out: do not move the reader elsewhere
+  get midSolve() { return !!this.touched && !this.solved; }
 
   // ---------- moving through the book ----------
   go(dir) {
+    if (this.review) return dir > 0 ? this.nextReview() : this.leaveReview();
     if (this.ended) {
-      if (dir < 0) { this.ended = false; this.enter(); }
+      if (dir < 0 && this.ch) { this.ended = false; this.enter(); }
       return;
     }
     if (dir > 0 && !this.step.task) this.store.mark(`${this.ch.id}.${this.frame.n}.read`, 'ok');
+    if (this.step.task && !this.solved && this.mistakes) this.store.miss(this.stepKey);
     let f = this.f, s = this.s + dir;
     if (s >= this.frame.steps.length) { f++; s = 0; }
     if (s < 0) { f--; s = f >= 0 ? this.ch.frames[f].steps.length - 1 : 0; }
@@ -158,8 +156,10 @@ export class Player {
     this.enter();
   }
 
-  enter() {
+  // mine: the reader moved here (so it is the newest place for every device)
+  enter(mine = true) {
     this.run++;
+    this.touched = false;
     const step = this.step;
     this.chess = load(step.fen);
     this.home = this.chess.fen();   // where a wrong try goes back to
@@ -179,8 +179,7 @@ export class Player {
     this.decorate();
     this.bind();
     this.paint();
-    this.store.data.pos = { ch: this.ch.id, f: this.f, s: this.s };
-    this.store.save();
+    if (mine && !this.review) this.store.setPos({ ch: this.ch.id, f: this.f, s: this.s });
     if (!step.task && step.demo) this.demo(step.demo);
   }
 
@@ -205,11 +204,13 @@ export class Player {
     const step = this.step, frame = this.frame, ui = this.ui;
     ui.book.textContent = `${this.ch.n ? 'Chapter ' + this.ch.n + ' · ' : ''}${this.book.title}`;
     ui.chapter.textContent = this.ch.title;
-    ui.count.textContent = `${this.f + 1} / ${this.ch.frames.length}`;
-    ui.fill.style.width = `${((this.f + (this.s + 1) / frame.steps.length) / this.ch.frames.length) * 100}%`;
+    const rv = this.review;
+    ui.count.textContent = rv ? `Review ${rv.i + 1} / ${rv.queue.length}` : `${this.f + 1} / ${this.ch.frames.length}`;
+    ui.fill.style.width = rv ? `${(rv.i / rv.queue.length) * 100}%` : `${((this.f + (this.s + 1) / frame.steps.length) / this.ch.frames.length) * 100}%`;
     ui.seal.textContent = frame.n;
-    ui.kind.textContent = { escape: 'Your move', survive: 'Your move', mate: 'Your move', line: 'Your move', pick: 'Question', tap: 'Find it', guards: 'Find it' }[step.task] || 'Read';
-    ui.pips.innerHTML = frame.steps.length > 1
+    const kind = { escape: 'Your move', survive: 'Your move', mate: 'Your move', line: 'Your move', pick: 'Question', tap: 'Find it', guards: 'Find it' }[step.task] || 'Read';
+    ui.kind.textContent = rv ? `Review \u00b7 ${this.stageText(rv.queue[rv.i].key)}` : kind;
+    ui.pips.innerHTML = !rv && frame.steps.length > 1
       ? frame.steps.map((_, i) => `<i class="${i === this.s ? 'on' : i < this.s ? 'past' : ''}"></i>`).join('') : '';
     ui.title.textContent = step.title || frame.title || '';
     ui.say.innerHTML = step.say || '';
@@ -217,7 +218,9 @@ export class Player {
     ui.ask.hidden = !ui.ask.innerHTML;
     this.feedback(null);
     this.paintChoices();
-    ui.back.disabled = this.f === 0 && this.s === 0;
+    ui.back.disabled = !rv && this.f === 0 && this.s === 0;
+    ui.back.textContent = rv ? 'Exit' : 'Back';
+    this.paintDue();
     ui.hint.hidden = ui.show.hidden = !step.task;
     ui.hint.disabled = ui.show.disabled = false;
     this.paintNext();
@@ -235,8 +238,20 @@ export class Player {
   paintNext() {
     const ui = this.ui, ready = this.solved || !this.step.task;
     ui.next.classList.toggle('ready', ready);
-    const lastStep = this.f === this.ch.frames.length - 1 && this.s === this.frame.steps.length - 1;
+    const rv = this.review;
+    const lastStep = rv ? rv.i === rv.queue.length - 1 : this.f === this.ch.frames.length - 1 && this.s === this.frame.steps.length - 1;
     ui.next.textContent = ready ? (lastStep ? 'Finish' : 'Next') : 'Skip';
+  }
+  // the line above the lesson that offers today's review
+  paintDue() {
+    const n = this.review || this.ended ? 0 : this.store.due().length;
+    this.ui.due.hidden = !n;
+    if (n) this.ui.due.innerHTML = `<b>${n}</b> missed ${n === 1 ? 'position is' : 'positions are'} due for review <span>Start</span>`;
+  }
+  // where a card stands on its way to mature, e.g. "stage 2 of 4"
+  stageText(key) {
+    const c = this.store.data.rev[key];
+    return c ? `stage ${c.i + 1} of ${LADDER.length}` : '';
   }
   // fade the bottom edge of the lesson text only while there is more to scroll to
   fade() {
@@ -298,6 +313,7 @@ export class Player {
 
   async tryMove(from, to) {
     if (this.busy || this.solved) return;
+    this.touched = true;
     const options = this.chess.moves({ square: from, verbose: true }).filter(m => m.to === to);
     if (!options.length) {
       const why = explainIllegal(this.chess, from, to);
@@ -465,6 +481,7 @@ export class Player {
 
   call(what, btn) {
     if (this.solved || this.busy) return;
+    this.touched = true;
     const step = this.step;
     const truth = what === 'mate' ? this.chess.isCheckmate()
       : what === 'stalemate' ? this.chess.isStalemate()
@@ -487,6 +504,7 @@ export class Player {
 
   pick(i, btn) {
     if (this.solved) return;
+    this.touched = true;
     const step = this.step;
     if (i === step.ans) { btn.classList.add('right'); return this.finish(''); }
     this.mistakes++;
@@ -538,11 +556,17 @@ export class Player {
     const step = this.step;
     this.solved = true;
     this.busy = false;
-    this.store.mark(this.stepKey, this.revealed ? 'shown' : this.mistakes ? 'retry' : 'ok');
+    const clean = !this.revealed && !this.mistakes;
+    let note = '';
+    if (this.review) note = this.scoreReview(clean);
+    else {
+      this.store.mark(this.stepKey, this.revealed ? 'shown' : this.mistakes ? 'retry' : 'ok');
+      if (!clean) { this.store.miss(this.stepKey); note = 'This one will come back tomorrow for review.'; }
+    }
     this.decorate();
     this.board.select(null);
-    const text = [lead, step.done].filter(Boolean).join(' ');
-    this.feedback(this.revealed ? 'info' : 'yes', text || 'Right.');
+    const text = [lead, step.done].filter(Boolean).join(' ') || 'Right.';
+    this.feedback(this.revealed ? 'info' : 'yes', note ? `${text} <span class="note">${note}</span>` : text);
     this.ui.hint.disabled = this.ui.show.disabled = true;
     this.ui.choices.querySelectorAll('button').forEach(b => { b.disabled = true; });
     this.ui.ask.innerHTML = this.askText();
@@ -680,9 +704,102 @@ export class Player {
     ui.fill.style.width = '100%';
   }
 
+  // ---------- review: the positions you missed, until each one is mature ----------
+  async startReview() {
+    const queue = [];
+    for (const key of this.store.due()) {
+      const [chId, n, i] = key.split('.');
+      const meta = this.book.chapters.find(c => c.id === chId && c.file);
+      if (!meta) continue;
+      const ch = await this.chapter(chId);
+      const f = ch.frames.findIndex(fr => String(fr.n) === n);
+      if (f >= 0 && ch.frames[f].steps[+i] && ch.frames[f].steps[+i].task) queue.push({ key, ch: chId, f, s: +i });
+    }
+    if (!queue.length) return this.paintDue();
+    this.review = { queue, i: 0, counted: new Set(), clean: 0, missed: 0 };
+    this.ended = false;
+    this.showReview();
+  }
+  async showReview() {
+    const item = this.review.queue[this.review.i];
+    this.ch = await this.chapter(item.ch);
+    this.f = item.f;
+    this.s = item.s;
+    this.enter(false);
+  }
+  // only the first answer of the day moves a card; a miss puts it back in today's pile
+  scoreReview(clean) {
+    const rv = this.review, item = rv.queue[rv.i];
+    if (rv.counted.has(item.key)) {
+      if (!clean) rv.queue.push(item);
+      return clean ? 'Got it this time. It comes back tomorrow.' : 'Once more at the end.';
+    }
+    rv.counted.add(item.key);
+    this.store.reviewed(item.key, clean);
+    const c = this.store.data.rev[item.key];
+    if (!clean) { rv.missed++; rv.queue.push(item); return 'Missed. Back to the start: it returns tomorrow, and once more at the end of today.'; }
+    rv.clean++;
+    return c.m ? 'That is four clean reviews, the last after three weeks. This one is mature.' : `Clean. It comes back in ${LADDER[c.i]} days.`;
+  }
+  nextReview() {
+    const rv = this.review, item = rv.queue[rv.i];
+    if (!this.solved) {                 // skipped: counts as a miss, and it stays due
+      if (!rv.counted.has(item.key)) { rv.counted.add(item.key); rv.missed++; this.store.reviewed(item.key, false); }
+    }
+    rv.i++;
+    if (rv.i >= rv.queue.length) return this.endOfReview();
+    this.showReview();
+  }
+  async leaveReview() {
+    this.review = null;
+    await this.start();
+  }
+  endOfReview() {
+    this.run++;
+    const rv = this.review, ui = this.ui, cards = this.store.cards();
+    this.review = null;
+    this.ended = true;
+    ui.kind.textContent = 'Review done';
+    ui.seal.textContent = '\u2713';
+    ui.pips.innerHTML = '';
+    ui.title.textContent = 'That is today\u2019s review';
+    const when = cards.nextIn === null ? 'Nothing is waiting.' : cards.nextIn <= 0 ? 'More are due today.' : cards.nextIn === 1 ? 'The next ones are due tomorrow.' : `The next ones are due in ${cards.nextIn} days.`;
+    ui.say.innerHTML = `<ul class="tally"><li><b>${rv.clean}</b> clean</li><li><b>${rv.missed}</b> missed</li>
+      <li><b>${cards.learning}</b> still learning</li><li><b>${cards.mature}</b> mature</li></ul><p>${when}</p>`;
+    ui.ask.hidden = true;
+    this.feedback(null);
+    ui.choices.innerHTML = '';
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'choice'; b.textContent = 'Back to the book';
+    b.onclick = () => this.start();
+    ui.choices.appendChild(b);
+    ui.hint.hidden = ui.show.hidden = true;
+    ui.due.hidden = true;
+    ui.back.textContent = 'Back';
+    ui.back.disabled = true;
+    ui.next.classList.remove('ready');
+    ui.next.textContent = 'Next';
+    ui.count.textContent = 'Review';
+    ui.fill.style.width = '100%';
+  }
+
   async openDrawer() {
     const body = this.ui.drawerBody;
     body.innerHTML = '';
+    const cards = this.store.cards();
+    const rv = document.createElement('section');
+    rv.className = 'toc-review';
+    const when = cards.nextIn === null ? '' : cards.nextIn === 0 ? '' : cards.nextIn === 1 ? ' Next review tomorrow.' : ` Next review in ${cards.nextIn} days.`;
+    rv.innerHTML = `<h3>Review</h3><p>${cards.learning || cards.mature
+      ? `<b>${cards.due}</b> due today \u00b7 <b>${cards.learning}</b> still learning \u00b7 <b>${cards.mature}</b> mature.${when}`
+      : 'Positions you miss come back here: after 1 day, then 3, 8 and 21. Solve one cleanly after the 21-day wait and it is mature.'}</p>`;
+    if (cards.due) {
+      const go = document.createElement('button');
+      go.type = 'button'; go.className = 'btn next ready'; go.textContent = `Review ${cards.due} now`;
+      go.onclick = () => { this.ui.drawer.hidden = true; this.startReview(); };
+      rv.appendChild(go);
+    }
+    body.appendChild(rv);
     for (const meta of this.book.chapters) {
       const sec = document.createElement('section');
       sec.className = 'toc-chapter';
@@ -714,11 +831,10 @@ export class Player {
     const reset = document.createElement('button');
     reset.type = 'button';
     reset.className = 'btn ghost toc-reset';
-    reset.textContent = 'Reset my progress in this book';
+    reset.textContent = 'Reset my progress in this book (on every device)';
     reset.onclick = () => {
       if (reset.dataset.armed) {
-        this.store.data = { pos: null, steps: {} };
-        this.store.save();
+        this.store.reset();
         this.ui.drawer.hidden = true;
         this.open(this.book.chapters.find(c => c.file).id);
       } else { reset.dataset.armed = '1'; reset.textContent = 'Tap again to erase all progress'; }
@@ -733,6 +849,12 @@ export class Player {
 export async function start(book, base) {
   const player = new Player(book, base, document.getElementById('app'));
   window.player = player;
+  // give the cloud a moment, so the book opens where the other device left off;
+  // if it is slow or offline, open from this device and catch up when it answers
+  const pulled = player.sync.pull();
+  await Promise.race([pulled, new Promise(r => setTimeout(r, 2500))]);
   await player.start();
+  pulled.then(res => { if (res && res.posMoved && !player.midSolve && !player.review) player.start(); else player.paintDue(); });
+  if (new URLSearchParams(location.search).get('review')) player.startReview();
   return player;
 }

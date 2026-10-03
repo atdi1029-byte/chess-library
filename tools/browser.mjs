@@ -21,10 +21,31 @@ function chromeBin() {
   throw new Error('Chrome for Testing is not installed (npx @puppeteer/browsers install chrome@stable --path ~/.cache/puppeteer)');
 }
 
+import vm from 'node:vm';
+// The sync endpoint for tests: the real apps_script.gs with stand-ins for Google's services.
+// State is kept in memory, so every test run starts empty.
+function fakeSync() {
+  const props = {};
+  const ctx = {
+    PropertiesService: { getScriptProperties: () => ({ getProperties: () => ({ ...props }), getProperty: k => (k in props ? props[k] : null), setProperties: o => Object.assign(props, o), deleteProperty: k => { delete props[k]; } }) },
+    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    ContentService: { MimeType: { JSON: 'json', JAVASCRIPT: 'js' }, createTextOutput: text => ({ text, setMimeType() { return this; } }) },
+  };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'apps_script.gs'), 'utf8'), ctx);
+  return { handle: query => ctx.doGet({ parameter: query }).text, props };
+}
+
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml' };
 export function serve() {
   return new Promise(resolve => {
+    const sync = fakeSync();
     const server = http.createServer((req, res) => {
+      if (req.url.startsWith('/sync')) {
+        const query = Object.fromEntries(new URL(req.url, 'http://x').searchParams);
+        res.writeHead(200, { 'Content-Type': 'text/javascript', 'Cache-Control': 'no-store' });
+        return res.end(sync.handle(query));
+      }
       let p = decodeURIComponent(req.url.split('?')[0]);
       if (p.endsWith('/')) p += 'index.html';
       const file = path.join(ROOT, p);
@@ -36,18 +57,21 @@ export function serve() {
   });
 }
 
-export async function launch() {
+// Tests cannot reach the internet unless they ask to (online: true, for a check of the live site)
+export async function launch({ online = false } = {}) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'chess-test-'));
   const browser = await puppeteer.launch({
     executablePath: chromeBin(), headless: true, userDataDir: profile,
-    args: ['--no-first-run', '--no-default-browser-check', '--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1'],
+    args: ['--no-first-run', '--no-default-browser-check', ...(online ? [] : ['--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1'])],
   });
   browser.cleanup = async () => { await browser.close(); fs.rmSync(profile, { recursive: true, force: true }); };
   return browser;
 }
 
-export async function openPage(browser, url, viewport) {
-  const page = await browser.newPage();
+// opts.syncUrl points the app at the test endpoint; opts.context gives the page its own storage (a second "device")
+export async function openPage(browser, url, viewport, opts = {}) {
+  const page = await (opts.context || browser).newPage();
+  if (opts.syncUrl) await page.evaluateOnNewDocument(u => { try { localStorage.setItem('chesslib:syncUrl', u); } catch (e) { /* no storage */ } }, opts.syncUrl);
   await page.setViewport(viewport);
   page.errors = [];
   page.on('pageerror', e => page.errors.push(String(e)));
