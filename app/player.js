@@ -4,8 +4,10 @@
 //   fen     position, e.g. "7k/6pQ/8/5B2/8/8/8/4K3 b" (side to move after the board)
 //   say     teaching text (html)          ask   the instruction line
 //   task    'escape' get out of check, or call mate/stalemate
+//           'survive' answer a check so that no mate follows within n moves, or call it lost
 //           'mate'   give checkmate in one (calls: ['nomate'] adds a "no mate here" button)
-//           'line'   play a line; sol = [mine, reply, mine, ...] or a list of such lines
+//           'line'   play a line; sol = [mine, reply, mine, ...] or a list of such lines;
+//                    without sol there is no forced mate in n moves (calls: ['nomate'])
 //           'pick'   choose from opts, ans = index of the right one
 //           'tap'    tap the right square(s): squares, need
 //           'guards' name the piece guarding each lettered square (labels)
@@ -17,7 +19,7 @@
 import { Board } from './board.js';
 import {
   Chess, load, pieceMap, kingSquare, explainIllegal, escapeKind, bestEscape,
-  describeEscape, matingMoves, spoiler, NAME,
+  describeEscape, matingMoves, forcedMate, spoiler, NAME,
 } from './rules.js';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -158,7 +160,7 @@ export class Player {
     this.chess = load(step.fen);
     this.home = this.chess.fen();   // where a wrong try goes back to
     this.ply = 0;
-    this.lines = step.task === 'line' ? (Array.isArray(step.sol[0]) ? step.sol : [step.sol]) : null;
+    this.lines = step.task === 'line' && step.sol ? (Array.isArray(step.sol[0]) ? step.sol : [step.sol]) : null;
     this.mistakes = 0;
     this.solved = false;
     this.revealed = false;
@@ -201,7 +203,7 @@ export class Player {
     ui.count.textContent = `${this.f + 1} / ${this.ch.frames.length}`;
     ui.fill.style.width = `${((this.f + (this.s + 1) / frame.steps.length) / this.ch.frames.length) * 100}%`;
     ui.seal.textContent = frame.n;
-    ui.kind.textContent = { escape: 'Your move', mate: 'Your move', line: 'Your move', pick: 'Question', tap: 'Find it', guards: 'Find it' }[step.task] || 'Read';
+    ui.kind.textContent = { escape: 'Your move', survive: 'Your move', mate: 'Your move', line: 'Your move', pick: 'Question', tap: 'Find it', guards: 'Find it' }[step.task] || 'Read';
     ui.pips.innerHTML = frame.steps.length > 1
       ? frame.steps.map((_, i) => `<i class="${i === this.s ? 'on' : i < this.s ? 'past' : ''}"></i>`).join('') : '';
     ui.title.textContent = step.title || frame.title || '';
@@ -242,7 +244,7 @@ export class Player {
   // ---------- the tasks ----------
   bind() {
     const t = this.step.task, h = this.board.handlers = {};
-    if (t === 'escape' || t === 'mate' || t === 'line') {
+    if (t === 'escape' || t === 'survive' || t === 'mate' || t === 'line') {
       h.canPick = sq => { const p = this.chess.get(sq); return !this.busy && !this.solved && !!p && p.color === this.chess.turn(); };
       h.targetsFor = sq => {
         const seen = new Set();
@@ -272,8 +274,12 @@ export class Player {
       const calls = step.calls || (this.chess.inCheck() ? ['mate'] : ['stalemate']);
       if (calls.includes('mate')) button('No way out. It is checkmate.', b => this.call('mate', b), 'call');
       if (calls.includes('stalemate')) button('No legal move. It is stalemate.', b => this.call('stalemate', b), 'call');
+    } else if (step.task === 'survive') {
+      button(`Nothing helps. ${sideName(this.chess.turn() === 'w' ? 'b' : 'w')} mates whatever I play.`, b => this.call('lost', b), 'call');
     } else if (step.task === 'mate' && (step.calls || []).includes('nomate')) {
       button('There is no mate in one here.', b => this.call('nomate', b), 'call');
+    } else if (step.task === 'line' && (step.calls || []).includes('nomate')) {
+      button(`${sideName(this.chess.turn())} cannot force mate here.`, b => this.call('nomate', b), 'call');
     }
   }
 
@@ -312,6 +318,31 @@ export class Player {
       return this.finish(this.chess.isCheckmate() ? 'Out of check, and it is checkmate the other way.' : how);
     }
 
+    if (step.task === 'survive') {
+      if (step.sol && !step.sol.map(bare).includes(san)) {
+        // it avoids mate, but the lesson wants the defence that costs nothing
+        this.mistakes++;
+        this.feedback('no', (step.wrong && step.wrong[san]) || step.other || 'That loses material for nothing. Find the defence that is protected.');
+        const grab = this.chess.moves({ verbose: true }).find(m => m.to === made.to && m.captured);
+        if (grab) {
+          this.busy = true;
+          await sleep(700);
+          if (run !== this.run) return;
+          this.make(grab, [[grab.from, grab.to, 'red']]);
+        }
+        return this.takeBack(run, 1800);
+      }
+      const killer = this.mateWithin(step.n || 1);
+      if (!killer) return this.finish(`That holds. ${sideName(this.chess.turn())} has no mate.`);
+      this.mistakes++;
+      this.feedback('no', `That does not help: ${sideName(this.chess.turn())} plays <b>${bare(killer.san)}</b>${killer.san.includes('#') ? ', mate.' : ' and mate follows.'}`);
+      this.busy = true;
+      await sleep(700);
+      if (run !== this.run) return;
+      this.make(killer, [[killer.from, killer.to, 'red']]);
+      return this.takeBack(run, 1800);
+    }
+
     if (step.task === 'mate') {
       if (this.chess.isCheckmate()) return this.finish('Checkmate.');
       this.mistakes++;
@@ -331,8 +362,9 @@ export class Player {
     }
 
     if (step.task === 'line') {
-      const live = this.lines.filter(l => l[this.ply] && bare(l[this.ply]) === san);
-      const left = Math.ceil((Math.max(...this.lines.map(l => l.length)) - this.ply) / 2); // my moves left, this one included
+      const live = (this.lines || []).filter(l => l[this.ply] && bare(l[this.ply]) === san);
+      const total = this.lines ? Math.max(...this.lines.map(l => l.length)) : (step.n || 1) * 2 - 1;
+      const left = Math.ceil((total - this.ply) / 2); // my moves left, this one included
       const mateGoal = step.goal !== 'win';
       if (mateGoal && this.chess.isCheckmate()) return this.finish('Checkmate.');
       if (live.length) {
@@ -342,9 +374,10 @@ export class Player {
       }
       // off the book line: is it still a forced mate? (only checked when it is quick to work out)
       let reply = step.bad && step.bad[san];
-      if (!reply && mateGoal && left - 1 <= 1) {
+      if (!reply && mateGoal && left - 1 <= 2) {
+        if (left - 1 === 2) { this.busy = true; this.feedback('info', 'Checking that...'); await sleep(30); if (run !== this.run) return; this.busy = false; }
         const r = spoiler(this.chess, left - 1);
-        if (!r && this.chess.moves().length) {
+        if (!r && this.chess.moves().length && this.lines) {
           this.lines = [[...Array(this.ply + 1).fill('?'), this.chess.moves()[0], ...Array(Math.max(0, (left - 1) * 2 - 1)).fill('*')]];
           return this.answer(run, this.chess.moves()[0], 'That works too. Finish it off.');
         }
@@ -380,6 +413,22 @@ export class Player {
     if (this.lines[0][this.ply] === '*') this.lines = [[...this.lines[0]]];
   }
 
+  // the mate (first move) the side to move can force within n moves, if any
+  mateWithin(n) {
+    for (let d = 1; d <= n; d++) { const m = forcedMate(this.chess, d); if (m) return m; }
+    return null;
+  }
+  // moves for the side in trouble after which no mate follows within n
+  savers(n) {
+    const out = [];
+    for (const m of this.chess.moves({ verbose: true })) {
+      this.chess.move(m);
+      if (!this.mateWithin(n)) out.push(m);
+      this.chess.undo();
+    }
+    return out;
+  }
+
   make(move, arrows) {
     const made = this.chess.move(move);
     this.last = { from: made.from, to: made.to };
@@ -400,10 +449,14 @@ export class Player {
 
   call(what, btn) {
     if (this.solved || this.busy) return;
-    const truth = { mate: this.chess.isCheckmate(), stalemate: this.chess.isStalemate(), nomate: matingMoves(this.chess).length === 0 }[what];
+    const step = this.step;
+    const truth = what === 'mate' ? this.chess.isCheckmate()
+      : what === 'stalemate' ? this.chess.isStalemate()
+      : what === 'lost' ? this.savers(step.n || 1).length === 0
+      : step.task === 'line' ? !step.sol : matingMoves(this.chess).length === 0;
     if (truth) {
       btn.classList.add('right');
-      return this.finish({ mate: 'Checkmate. There is no capture, no block and no safe square.', stalemate: 'Stalemate. No legal move, and no check: the game is a draw.', nomate: 'Right. Nothing mates here.' }[what]);
+      return this.finish({ mate: 'Checkmate. There is no capture, no block and no safe square.', stalemate: 'Stalemate. No legal move, and no check: the game is a draw.', nomate: 'Right. There is no mate here.', lost: 'Right. Nothing saves the King.' }[what]);
     }
     this.mistakes++;
     btn.classList.add('wrong');
@@ -412,6 +465,7 @@ export class Player {
       mate: this.chess.inCheck() ? 'Not mate. There is a way out of this check. Find it on the board.' : 'The King is not in check, so it cannot be checkmate.',
       stalemate: this.chess.inCheck() ? 'The King is in check, so this cannot be stalemate.' : 'There is a legal move. Find it on the board.',
       nomate: 'There is a mate. Look at every check.',
+      lost: 'There is a defence. Find the move that holds.',
     }[what]);
   }
 
@@ -487,6 +541,7 @@ export class Player {
     this.hinted = true;
     const auto = {
       escape: 'Three ways out of check: capture the checking piece, block the line, or move the King. Try each one on the board.',
+      survive: 'A block only helps if the blocker is protected, or if taking it does not give mate. Try each defence and watch the reply.',
       mate: 'Look at every check. Then ask whether the King can capture, block or run.',
       line: 'Start with a check the other side can only answer one way.',
       pick: 'Work it out on the board before you choose.',
@@ -518,6 +573,13 @@ export class Player {
       this.make(m, [[m.from, m.to, 'gold']]);
       return this.finish(`${bare(m.san)} gets out.`);
     }
+    if (step.task === 'survive') {
+      const m = step.sol ? find(step.sol[0]) : this.savers(step.n || 1)[0];
+      if (!m) return this.finish('Nothing saves the King here.');
+      this.make(m, [[m.from, m.to, 'gold']]);
+      return this.finish(`${bare(m.san)} holds.`);
+    }
+    if (step.task === 'line' && !this.lines) return this.finish('There is no forced mate here.');
     if (step.task === 'line') {
       for (const san of this.lines[0].slice(this.ply)) {
         const m = find(san);

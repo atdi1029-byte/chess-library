@@ -39,13 +39,14 @@ try {
         else if (st.task === 'guards') { /* answered below */ }
         else if (k === 'mated') await page.click('.choice.call');
         else if (k === 'stalemate' && st.task === 'escape') await page.$$eval('.choice.call', b => b[b.length - 1].click());
-        else if (k === 'nomate') await page.click('.choice.call');
+        else if (k === 'nomate' || k === 'lost' || k.startsWith('nomate:')) await page.click('.choice.call');
         else if (st.task === 'tap') for (const sq of st.squares) await tap(page, sq);
+        else if (st.task === 'pick') await page.$$eval('.choice', (b, i) => b[i].click(), st.ans);
         else if (st.task === 'line') {
           const line = Array.isArray(st.sol[0]) ? st.sol[0] : st.sol;
           for (let p = 0; p < line.length; p += 2) { await playMove(line[p]); await sleep(900); }
         }
-        else if (st.task === 'escape' || st.task === 'mate') await playMove(k.split(':')[1].split(',')[0]);
+        else if (st.task === 'escape' || st.task === 'mate' || st.task === 'survive') await playMove(st.sol ? st.sol[0] : k.split(':')[1].split(',')[0]);
         if (st.task === 'guards') {
           const c = load(st.fen), king = c.findPiece({ type: 'k', color: c.turn() })[0];
           c.remove(king);

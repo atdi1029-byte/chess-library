@@ -2,9 +2,12 @@
 // Each task step carries `check`, the answer the book gives, and the engine must agree:
 //   mated | stalemate | only:<move> (the single legal move) | legal:<move> (must be playable)
 //   mate:<move>[,<move>] (exactly these moves mate in one) | nomate | tap | line
+//   survive:<move>[,<move>] (exactly these moves avoid a mate within n) | lost (none does)
+//   nomate:<n> (no forced mate within n moves)
 import fs from 'node:fs';
 import path from 'node:path';
 import { load, matingMoves, forcedMate } from '../app/rules.js';
+import { mateDepth, savers } from './solve.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const bare = s => s.replace(/[+#]/g, '');
@@ -35,17 +38,19 @@ for (const bookDir of fs.readdirSync(ROOT)) {
         const legal = c.moves().map(bare);
         const say = (st.say || '') + (st.done || '') + (st.ask || '');
         if (/[—]/.test(say)) fail(where, 'em dash in text');
-        if (st.task && !st.check) return fail(where, 'task without a check');
-        if (!st.task) {
-          if (st.demo) { const d = load(st.fen); for (const m of st.demo) { try { d.move(typeof m === 'string' ? m : m.m); } catch (e) { fail(where, `demo move ${JSON.stringify(m)} is not legal`); } } }
-          return;
-        }
+        if (st.task && st.task !== 'pick' && !st.check) return fail(where, 'task without a check');
+        if (st.demo) { const d = load(st.fen); for (const m of st.demo) { try { d.move(typeof m === 'string' ? m : m.m); } catch (e) { fail(where, `demo move ${JSON.stringify(m)} is not legal`); break; } } }
+        if (!st.task) return;
+        if (st.task === 'pick') { if (!(st.ans >= 0 && st.ans < st.opts.length)) fail(where, 'pick needs ans within opts'); return; }
         const k = st.check, arg = k.includes(':') ? k.split(':')[1].split(',') : [];
         if (k === 'mated') { if (!c.isCheckmate()) fail(where, `not checkmate; legal: ${legal.join(' ')}`); }
         else if (k === 'stalemate') { if (!c.isStalemate()) fail(where, `not stalemate; legal: ${legal.join(' ')}`); }
         else if (k.startsWith('only:')) { if (!c.inCheck() || legal.length !== 1 || legal[0] !== arg[0]) fail(where, `expected the only move ${arg[0]}; legal: ${legal.join(' ')} check=${c.inCheck()}`); }
         else if (k.startsWith('legal:')) { if (!legal.includes(arg[0])) fail(where, `${arg[0]} is not legal; legal: ${legal.join(' ')}`); }
         else if (k.startsWith('mate:')) { const m = matingMoves(c).map(x => bare(x.san)).sort(); if (m.join() !== [...arg].sort().join()) fail(where, `expected mate by ${arg.join(' or ')}; engine finds: ${m.join(' ') || 'none'}`); }
+        else if (k.startsWith('survive:')) { const sv = savers(st.fen, st.n || 1).sort(); if (sv.join() !== [...arg].sort().join()) fail(where, `expected saving moves ${arg.join(' ')}; engine finds: ${sv.join(' ') || 'none'}`); }
+        else if (k === 'lost') { const sv = savers(st.fen, st.n || 1); if (sv.length) fail(where, `engine finds a defence: ${sv.join(' ')}`); }
+        else if (k.startsWith('nomate:')) { const r = mateDepth(st.fen, +arg[0]); if (r) fail(where, `engine finds mate in ${r.n}: ${r.first.join(' | ')}`); if (st.sol) fail(where, 'nomate step must not have sol'); if (st.n !== +arg[0]) fail(where, 'n must match the nomate depth'); }
         else if (k === 'nomate') { const m = matingMoves(c).map(x => x.san); if (m.length) fail(where, `engine finds a mate: ${m.join(' ')}`); }
         else if (k === 'line') {
           for (const line of (Array.isArray(st.sol[0]) ? st.sol : [st.sol])) {
