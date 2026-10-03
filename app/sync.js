@@ -49,6 +49,21 @@ export function diff(local, remote) {
 }
 const isEmpty = (p, remoteEpoch) => !Object.keys(p.steps).length && !Object.keys(p.rev).length && !p.pos && !(p.epoch > remoteEpoch);
 
+// Cut a patch into parts small enough for a GET
+function pieces(patch) {
+  const out = [];
+  let cur = { epoch: patch.epoch, steps: {}, rev: {}, pos: patch.pos || null }, size = 120;
+  const add = (kind, k, v) => {
+    const cost = k.length + JSON.stringify(v).length + 6;
+    if (size + cost > 1500) { out.push(cur); cur = { epoch: patch.epoch, steps: {}, rev: {}, pos: null }; size = 60; }
+    cur[kind][k] = v; size += cost;
+  };
+  for (const k in patch.steps) add('steps', k, patch.steps[k]);
+  for (const k in patch.rev) add('rev', k, patch.rev[k]);
+  out.push(cur);
+  return out;
+}
+
 let seq = 0;
 function jsonp(params, timeout = 25000) {
   return new Promise((resolve, reject) => {
@@ -77,6 +92,10 @@ export class Sync {
     this.params = { book: store.bookId };
     try { if (localStorage.getItem('chesslib:syncTest') === '1') this.params.t = '1'; } catch (e) { /* private mode */ }
     store.onChange = change => this.queue(change);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') this.fireNow(); });
+      window.addEventListener('pagehide', () => this.fireNow());
+    }
   }
   set(status) { this.status = status; if (this.onStatus) this.onStatus(status); }
 
@@ -126,30 +145,34 @@ export class Sync {
     if (isEmpty(patch, p.reset ? -1 : patch.epoch)) return;
     this.pending = { steps: {}, rev: {}, pos: null, reset: false };
     const ok = await this.send(patch);
-    if (!ok) {                                         // keep it for the next try; newer changes win
-      this.pending.steps = { ...patch.steps, ...this.pending.steps };
-      this.pending.rev = { ...patch.rev, ...this.pending.rev };
-      this.pending.pos = this.pending.pos || patch.pos;
-      this.pending.reset = this.pending.reset || p.reset;
+    if (ok) { this.pushFails = 0; return; }
+    // keep it for the next try (newer changes win) and try again by itself: 10s, 30s, then every minute.
+    // Sending the same patch twice is harmless: the server merges.
+    this.pending.steps = { ...patch.steps, ...this.pending.steps };
+    this.pending.rev = { ...patch.rev, ...this.pending.rev };
+    this.pending.pos = this.pending.pos || patch.pos;
+    this.pending.reset = this.pending.reset || p.reset;
+    this.pushFails = (this.pushFails || 0) + 1;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.flush(), [10000, 30000, 60000][Math.min(this.pushFails - 1, 2)]);
+  }
+
+  // The page is being put away with changes not yet sent: fire them off without waiting for an
+  // answer (an image request still goes out while the page closes). The next pull squares things up.
+  fireNow() {
+    const p = this.pending;
+    if (!this.ready || (!Object.keys(p.steps).length && !Object.keys(p.rev).length && !p.pos)) return;
+    for (const piece of pieces({ epoch: this.store.data.epoch || 0, steps: p.steps, rev: p.rev, pos: p.pos })) {
+      new Image().src = getSyncUrl() + '?' + new URLSearchParams({ ...this.params, action: 'merge', d: JSON.stringify(piece) }).toString();
     }
   }
 
-  // Send a patch in pieces small enough for a GET
+  // Send a patch, in parts, and wait for each answer
   async send(patch) {
     const run = async () => {
       this.set('syncing');
-      const pieces = [];
-      let cur = { epoch: patch.epoch, steps: {}, rev: {}, pos: patch.pos || null }, size = 120;
-      const add = (kind, k, v) => {
-        const cost = k.length + JSON.stringify(v).length + 6;
-        if (size + cost > 1500) { pieces.push(cur); cur = { epoch: patch.epoch, steps: {}, rev: {}, pos: null }; size = 60; }
-        cur[kind][k] = v; size += cost;
-      };
-      for (const k in patch.steps) add('steps', k, patch.steps[k]);
-      for (const k in patch.rev) add('rev', k, patch.rev[k]);
-      pieces.push(cur);
       try {
-        for (const piece of pieces) {
+        for (const piece of pieces(patch)) {
           const res = await jsonp({ ...this.params, action: 'merge', d: JSON.stringify(piece) });
           if (!res || !res.ok) throw new Error((res && res.error) || 'sync failed');
         }

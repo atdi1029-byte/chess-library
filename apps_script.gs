@@ -27,7 +27,7 @@ function doGet(e) {
     if (!book) throw new Error('book is required');
     if (p.t === '1') book = 'test_' + book;
     var action = String(p.action || '').toLowerCase();
-    if (action === 'get') out = load(book);
+    if (action === 'get') { out = load(book); delete out.parts; }
     else if (action === 'ver') out = {ok: true, ver: load(book).ver};
     else if (action === 'merge') out = mergeIn(book, String(p.d || ''));
     else if (action === 'wipe' && p.t === '1') out = wipe(book);
@@ -51,13 +51,13 @@ function load(book) {
   for (var i = 0; i < n; i++) s += props[book + ':' + i] || '';
   var data = null;
   if (s) { try { data = JSON.parse(s); } catch (e) { data = null; } }
-  return {ok: true, ver: Number(props[book + ':ver']) || 0, data: data};
+  return {ok: true, ver: Number(props[book + ':ver']) || 0, data: data, parts: n};
 }
 
-function save(book, data, ver) {
+function save(book, data, ver, old) {
   var s = JSON.stringify(data);
   if (s.length > MAX_STATE) throw new Error('state too large');
-  var st = store(), old = Number(st.getProperty(book + ':n')) || 0, put = {}, n = 0;
+  var st = store(), put = {}, n = 0;
   for (var i = 0; i < s.length; i += PART) put[book + ':' + (n++)] = s.substring(i, i + PART);
   put[book + ':n'] = String(n);
   put[book + ':ver'] = String(ver);
@@ -82,7 +82,7 @@ function mergeIn(book, d) {
     var before = JSON.stringify(cur.data);
     var next = mergeState(cur.data, patch);
     if (JSON.stringify(next) === before) return {ok: true, ver: cur.ver};
-    save(book, next, cur.ver + 1);
+    save(book, next, cur.ver + 1, cur.parts);
     return {ok: true, ver: cur.ver + 1};
   } finally {
     lock.releaseLock();
