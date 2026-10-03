@@ -2,197 +2,91 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-  content="width=device-width, initial-scale=1.0">
-<meta name="apple-mobile-web-app-capable"
-  content="yes">
-<meta name="theme-color" content="#1a1612">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d1119">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" href="icons/logo-96.png">
+<link rel="apple-touch-icon" href="icons/logo-192.png">
 <title>Chess Library</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600&display=swap"
-  rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app/app.css?v=1">
 <style>
-:root {
-  --bg: #141820;
-  --raised: #1a2030;
-  --card: #1e2638;
-  --border: #2a3550;
-  --gold: #c5a55a;
-  --text: #c8cad0;
-  --dim: #6a7088;
-  --bright: #e8eaf0;
-  --r: 8px;
-}
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Inter', system-ui, sans-serif;
-  min-height: 100vh;
-}
-.header {
-  text-align: center;
-  padding: 40px 20px 20px;
-}
-.logo {
-  width: 120px; height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--gold);
-  margin-bottom: 16px;
-  box-shadow: 0 4px 24px rgba(0,0,0,.4);
-}
-.header h1 {
-  font-family: 'Playfair Display', serif;
-  font-size: 32px;
-  color: var(--bright);
-  margin-bottom: 4px;
-}
-.header h1 span { color: var(--gold); }
-.header p {
-  font-size: 14px;
-  color: var(--dim);
-}
-
-.shelf {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 32px 20px 60px;
-}
-.shelf h2 {
-  font-family: 'Playfair Display', serif;
-  font-size: 18px;
-  color: var(--dim);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-bottom: 20px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-.books {
-  display: grid;
-  grid-template-columns: repeat(auto-fill,
-    minmax(160px, 1fr));
-  gap: 24px;
-}
-.book-card {
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.2s;
-}
-.book-card:hover {
-  transform: translateY(-4px);
-}
-.book-cover {
-  width: 100%;
-  aspect-ratio: 2/3;
-  object-fit: cover;
-  border-radius: var(--r);
-  box-shadow: 0 4px 16px rgba(0,0,0,.4);
-  border: 1px solid var(--border);
-}
-.book-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--bright);
-  margin-top: 10px;
-  line-height: 1.4;
-}
-.book-author {
-  font-size: 12px;
-  color: var(--dim);
-  margin-top: 2px;
-}
-.book-progress {
-  font-size: 11px;
-  color: var(--gold);
-  margin-top: 4px;
-}
-
-/* Tools section */
-.tools {
-  display: grid;
-  grid-template-columns: repeat(auto-fill,
-    minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 20px;
-}
-.tool-card {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 20px;
-  transition: border-color 0.2s;
-}
-.tool-card:hover {
-  border-color: var(--gold);
-}
-.tool-icon {
-  font-size: 28px;
-  margin-bottom: 8px;
-}
-.tool-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--bright);
-  margin-bottom: 4px;
-}
-.tool-desc {
-  font-size: 12px;
-  color: var(--dim);
-  line-height: 1.5;
-}
-
-@media (max-width: 500px) {
-  .books {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-  }
-  .header h1 { font-size: 26px; }
-}
+body { overflow-y: auto; overscroll-behavior: auto; }
+.shelf { max-width: 760px; margin: 0 auto; padding: 34px 20px 60px; }
+.hero { text-align: center; margin-bottom: 30px; }
+.hero img { width: 112px; height: 112px; border-radius: 50%; border: 2px solid var(--gold); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+.hero h1 { font: 700 34px var(--serif); color: var(--bright); margin: 14px 0 4px; }
+.hero p { margin: 0; color: var(--dim); }
+.shelf h2 { font: 600 12px var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--gold); margin: 34px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.book { display: flex; gap: 18px; text-decoration: none; color: inherit; background: var(--navy); border: 1px solid var(--line); border-radius: 16px; padding: 16px; transition: border-color .15s, transform .15s; }
+.book:hover { border-color: var(--gold); transform: translateY(-2px); }
+.book img { width: 104px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 8px; box-shadow: 0 8px 20px rgba(0, 0, 0, .45); flex: none; }
+.book-body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.book-title { font: 700 21px var(--serif); color: var(--bright); line-height: 1.25; }
+.book-by { color: var(--dim); font-size: 13.5px; margin-top: 3px; }
+.book-what { font-size: 14.5px; margin-top: 9px; }
+.book-bar { height: 5px; border-radius: 3px; background: var(--panel-2); margin-top: auto; overflow: hidden; }
+.book-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--gold-hi)); }
+.book-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 9px; font-size: 13px; color: var(--dim); }
+.book-go { background: linear-gradient(180deg, var(--gold-hi), var(--gold)); color: #1c1608; font-weight: 700; padding: 8px 16px; border-radius: 9px; white-space: nowrap; }
+.tool { display: block; text-decoration: none; color: inherit; background: var(--navy); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.tool:hover { border-color: var(--gold); }
+.tool b { color: var(--bright); display: block; font-weight: 600; }
+.tool span { color: var(--dim); font-size: 14px; }
+.credit { margin-top: 44px; font-size: 12px; color: var(--dim); text-align: center; line-height: 1.6; }
+@media (max-width: 480px) { .book img { width: 84px; } .book-title { font-size: 18px; } .book-what { display: none; } }
 </style>
 </head>
 <body>
-
-<div class="header">
-  <img src="logo.png" alt="Chess Library"
-    class="logo">
-  <h1><span>&#9816;</span> Chess Library</h1>
-  <p>Learn chess through interactive books</p>
-</div>
-
 <div class="shelf">
+  <div class="hero">
+    <img src="icons/logo-192.png" alt="">
+    <h1>Chess Library</h1>
+    <p>Chess books you play through on a real board.</p>
+  </div>
+
   <h2>Books</h2>
-  <div class="books">
-    <a href="bobby-fischer/index.html"
-      class="book-card">
-      <img src="bobby-fischer/cover.jpg"
-        alt="Bobby Fischer Teaches Chess"
-        class="book-cover">
-      <div class="book-title">Bobby Fischer
-        Teaches Chess</div>
-      <div class="book-author">Bobby Fischer,
-        Stuart Margulies, Donn Mosenfelder</div>
-      <div class="book-progress">
-        Chapter 1 ready</div>
-    </a>
-  </div>
+  <a class="book" href="bobby-fischer/index.html">
+    <img src="bobby-fischer/cover.jpg" alt="">
+    <div class="book-body">
+      <div class="book-title">Bobby Fischer Teaches Chess</div>
+      <div class="book-by">Bobby Fischer, Stuart Margulies, Donn Mosenfelder</div>
+      <div class="book-what">Every frame of the book as a position on one board. You make the moves; the board explains what works and what does not.</div>
+      <div class="book-bar"><i id="bf-bar"></i></div>
+      <div class="book-row"><span id="bf-status">Chapter 1 ready</span><span class="book-go" id="bf-go">Start</span></div>
+    </div>
+  </a>
 
-  <h2 style="margin-top:40px">Tools</h2>
-  <div class="tools">
-    <a href="trainer/index.html" class="tool-card">
-      <div class="tool-icon">&#9816;</div>
-      <div class="tool-name">Piece Trainer</div>
-      <div class="tool-desc">Learn how each piece
-        moves with interactive lessons</div>
-    </a>
-  </div>
+  <h2>Tools</h2>
+  <a class="tool" href="trainer/index.html"><b>Piece trainer</b><span>How each piece moves, one lesson at a time.</span></a>
+
+  <p class="credit">Piece drawings by Colin M.L. Burnett. Rules engine: chess.js.</p>
 </div>
-
+<script type="module">
+import book from './bobby-fischer/book.js';
+// progress on the shelf: frames finished out of the frames that are built
+let saved = { steps: {}, pos: null };
+try { saved = Object.assign(saved, JSON.parse(localStorage.getItem('chesslib:' + book.id) || '{}')); } catch (e) { /* private mode */ }
+let total = 0, done = 0, built = 0;
+for (const meta of book.chapters.filter(c => c.file)) {
+  built++;
+  const ch = (await import('./bobby-fischer/' + meta.file)).default;
+  for (const fr of ch.frames) {
+    const tasks = fr.steps.map((s, i) => (s.task ? `${ch.id}.${fr.n}.${i}` : null)).filter(Boolean);
+    if (!tasks.length) continue;
+    total++;
+    if (tasks.every(k => saved.steps[k])) done++;
+  }
+}
+document.getElementById('bf-bar').style.width = (total ? (done / total) * 100 : 0) + '%';
+document.getElementById('bf-status').textContent = done
+  ? `${done} of ${total} frames done`
+  : `${built} of ${book.chapters.length} chapters built, ${total} frames`;
+document.getElementById('bf-go').textContent = saved.pos ? 'Continue' : 'Start';
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
 </body>
 </html>

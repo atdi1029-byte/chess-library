@@ -1,0 +1,5 @@
+# The book itself and everything pulled out of it stay on this Mac
+*.pdf
+work/
+node_modules/
+.DS_Store
