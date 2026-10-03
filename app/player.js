@@ -87,6 +87,8 @@ export class Player {
     this.ui.show.onclick = () => this.reveal();
     this.ui.count.onclick = () => this.openDrawer();
     this.ui.due.onclick = () => this.startReview();
+    // a sync that only got through on a later try
+    this.sync.onCatchUp = res => { if (res.posMoved && !this.review && !this.midSolve) this.start(); else this.paintDue(); };
     this.sync.onStatus = st => { this.ui.syncMark.dataset.state = st; this.ui.syncMark.title = { ok: 'Saved to the cloud', syncing: 'Syncing', offline: 'Not synced yet (offline?)', idle: '' }[st]; };
     // coming back to the app: fetch what the other device did, and follow it if it is further along
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') this.refresh(); });

@@ -50,12 +50,13 @@ export function diff(local, remote) {
 const isEmpty = (p, remoteEpoch) => !Object.keys(p.steps).length && !Object.keys(p.rev).length && !p.pos && !(p.epoch > remoteEpoch);
 
 let seq = 0;
-function jsonp(params, timeout = 15000) {
+function jsonp(params, timeout = 25000) {
   return new Promise((resolve, reject) => {
     const name = '__chesslib_cb' + Date.now() + '_' + (seq++);
     const script = document.createElement('script');
     const done = (fn, v) => { clearTimeout(timer); delete window[name]; script.remove(); fn(v); };
-    const timer = setTimeout(() => done(reject, new Error('sync timed out')), timeout);
+    // given up on: an answer that still arrives later must find something to call
+    const timer = setTimeout(() => { window[name] = () => { delete window[name]; script.remove(); }; reject(new Error('sync timed out')); }, timeout);
     window[name] = data => done(resolve, data);
     script.onerror = () => done(reject, new Error('sync unreachable'));
     script.src = getSyncUrl() + '?' + new URLSearchParams({ ...params, callback: name }).toString();
@@ -83,9 +84,17 @@ export class Sync {
   // Resolves to {posMoved} (the other device is further along) or null when the server could not be reached.
   async pull() {
     this.set('syncing');
+    clearTimeout(this.retry);
     let res;
-    try { res = await jsonp({ ...this.params, action: 'get' }); } catch (e) { this.set('offline'); return null; }
-    if (!res || !res.ok) { this.set('offline'); return null; }
+    try { res = await jsonp({ ...this.params, action: 'get' }); } catch (e) { res = null; }
+    if (!res || !res.ok) {
+      // try again by itself: after 10s, then 30s, then every minute
+      this.fails = (this.fails || 0) + 1;
+      this.retry = setTimeout(() => this.pull().then(r => r && this.onCatchUp && this.onCatchUp(r)), [10000, 30000, 60000][Math.min(this.fails - 1, 2)]);
+      this.set('offline');
+      return null;
+    }
+    this.fails = 0;
     const remote = res.data || {};
     this.remoteEpoch = Number(remote.epoch) || 0;
     const before = this.store.data.pos;
@@ -108,7 +117,10 @@ export class Sync {
   }
   async flush() {
     if (this.busy) { await this.busy; }
-    if (!this.ready) { await this.pull(); return; }    // the pull sends whatever is missing once it lands
+    if (!this.ready) {                                 // the pull sends whatever is missing once it lands
+      if (await this.pull() && this.status === 'ok') this.pending = { steps: {}, rev: {}, pos: null, reset: false };
+      return;
+    }
     const p = this.pending;
     const patch = { epoch: this.store.data.epoch || 0, steps: p.steps, rev: p.rev, pos: p.pos };
     if (isEmpty(patch, p.reset ? -1 : patch.epoch)) return;
